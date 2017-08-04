@@ -1,16 +1,14 @@
 # Site settings
-title: Project Pages
-description: "An Integrated Scientific Blogging Template"
+title: Temi Lee
+description: "一个喷子都喷不了的技术人员"
 url: "https://temilee.github.io"
-
-
 
 
 # Secondary Parameters
 baseurl: ""
 header-img: img/home-bg.jpg
 headercolor: "#FFFFFF"
-logo: /img/logos/Project-Pages-New-Logo-Inverted.png
+logo: /img/logos/favicon.png
 
 # Tertiary Parameters
 github_username:  TemiLee
