@@ -1,0 +1,11 @@
+_site
+node_modules
+Gemfile*
+
+npm-debug.log
+.DS_Store
+*/.DS_Store
+*/*/.DS_Store
+*.sh
+.idea
+.sass-cache
