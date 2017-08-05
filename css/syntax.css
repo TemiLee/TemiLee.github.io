@@ -13,6 +13,19 @@
   white-space: pre;       // forces <code> to respect <pre> formatting
 }
 
+span img{
+  display:inline;
+}
+
+.smalltext{
+  font-size:14px;
+  line-height: 25px;
+  color:#888888;
+}
+
+.smalltext sup{
+  color: red;
+}
 
 /*
  * GitHub style for Pygments syntax highlighter, for use with Jekyll
