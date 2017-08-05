@@ -17,6 +17,13 @@ span img{
   display:inline;
 }
 
+ul, ol {
+  margin-left: 30px;
+  font-size: 14px;
+  color: #888888;
+  line-height: 25px;
+}
+
 .smalltext{
   font-size:14px;
   line-height: 25px;

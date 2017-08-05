@@ -1,0 +1,76 @@
+---
+layout: post
+title:  "DEEP LEARNING OF MYSQL"
+date:   2017-07-25 05:01:29 +0100
+tags: MYSQL
+author: Temi Lee
+---
+
+MYSQL 的结构组成、各组件作用、INNODB `索引`和`锁`的深入分析
+
+<br/>
+
+**MYSQL的整体架构图：**
+==================
+>  精简版本
+> ![MYSQL架构图][1]
+
+> 概略版本
+> ![MYSQL架构图][2]
+
+> 号称史上最强版 <span>![][4]</span>
+> ![MYSQL架构图][3]
+
+***
+<br>
+
+**SQL LAYER & Storage Enginer Layer**
+==============================
+
+> 有了对 MYSQL 各个模块所处的层级，学习目标和顺序也就一目了然 `对于一个JAVA开发我觉得 SQL LAYER 了解 STORAGE ENGINE LAYER 需要精通`
+
+* SQL LAYER
+    - Management Serveices & Utilities： 系统管理和控制工具
+    - SQL Interface: SQL语句接口。接受用户的SQL命令，并且返回用户需要查询的结果。
+        + >应该还负责表变更的管理（TODO）
+    - Parser: 解析器。负责SQL的解析器验证和解析与转发。是由Lex和YACC实现的一个脚本
+        + 对SQL语句进行语意和语法的分析，然后按照不同的操作类型进行分类，然后做出针对性的转发。
+    -  Optimizer: 查询优化器.
+        + 根据SQL语句和和数据库的一些统计信息，在一系列算法的基础上进行分析，得出最优的执行策略。告诉之后的模块以什么样的方式取得这个SQL的执行结果
+    - Cache和Buffer：查询缓存。
+        + 将执行的SELECT类的Query语句的查询结果缓存在内存中，此Query语句的`Hash值`即为查询Key。当基表`任何`数据发生变化后缓存失效
+* STORAGE ENGINE LAYER
+    -  Engine ：存储引擎。(MYSQL的重头戏)
+        + 存储引擎设计为可插拔。
+        + `存储引擎基于表而不是数据库`
+    - MyISAM :
+        + 存储文件：`.frm` 表结构定义文件(所有存储引擎都有),`.MYD` 数据文件，`.MYI` 索引文件(*存储该表所有索引*)
+        + 支持 B-Tree,R-Tree,Full-text 三种索引
+    - InnoDB :
+        + 存储文件：
+            - `.frm`
+            - 共享表空间 : `ibdata1` 存储某一个数据库的所有的表数据、索引文件。
+            - 独占表空间 : `.ibd` 存储了单独一个表的数据内容以及索引内容
+        + 支持事务
+        + 数据多版本读取(MVCC)
+        + 更强的锁定机制
+        + 外键(数据完整性)
+        + 索引：B+Tree,Hash,Full-text(MySQL5.6版本开始支持)
+
+***
+
+针对InnoDB 的索引和锁的一些学习：
+
+
+
+
+
+
+
+
+
+
+[1]: /img/mysql_simple2.jpeg
+[2]: /img/mysql_simple.jpeg
+[3]: /img/mysqlFrame.jpg
+[4]: /img/Surprised.jpeg

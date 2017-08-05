@@ -1,5 +1,5 @@
 ---
-layout:     notebook
+layout:     post
 title:      Phrase Of Coder
 author:     Temi Lee
 tags: 		Phrase
@@ -12,4 +12,7 @@ category:   Phrase
 | Phrase(词汇) | 解释 |
 |:------:|:----:|
 |STW     |Stop The World 指jvm在运行垃圾回收时暂停所有其他线程的表现|
+|Dead Lock|死锁，指程序中有环形加锁造成的相互等待|
+|RDBMS    |Relational Database Management System：关系数据库管理系统|
 |未完待续 |持续更新|
+
