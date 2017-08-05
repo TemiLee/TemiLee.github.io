@@ -1,7 +1,7 @@
 ---
 layout: page
-title: "About"
-description: "Why use Project Pages?"
+title: "About Me"
+description: "Javaer"
 header-img: "img/home-bg.jpg"
 ---
 
