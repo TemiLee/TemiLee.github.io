@@ -47,7 +47,7 @@
 	
 	$.Cassette.defaults 	= {
 		// song names. Assumes the path of each song is songs/name.filetype
-		songs			: [ 'BlueDucks_FourFlossFiveSix', 'BlankKytt_ThursdaySnowReprise', 'BlueDucks_FlossSuffersFromGammaRadiation', 'BlankKyt_RSPN' ],
+		songs			: [ '33f9b3bcd', '76c0c754b258', '7827a958e8c', 'ae2e8f098efc1' ],
 		fallbackMessage	: 'HTML5 audio not supported',
 		// initial sound volume
 		initialVolume	: 0.7
