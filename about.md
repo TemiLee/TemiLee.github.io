@@ -13,7 +13,6 @@ header-img: "img/home-bg.jpg"
     }
 </style>
 
-
 # Some Illus About This Project
 
 - **作为自己的学习记录,算是对流逝的时间的一点见证吧**
@@ -43,9 +42,6 @@ header-img: "img/home-bg.jpg"
 
 
 ***
-
-![null][4]
-
 
 
 [1]: /img/onePercent.jpeg
