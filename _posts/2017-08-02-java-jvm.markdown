@@ -63,6 +63,8 @@ Java jvm 的全面分析。对于一名`javaer`来说深入了解下 `jvm` 的�
     - TIPS:
         > <div class="smalltext">STW(Stop-The-World) :Java中一种全局暂停现象，全局停顿，所有Java代码停止,native代码可以执行，但不能与JVM交互.在执行垃圾收集算法时，Java应用程序的其他所有线程都被挂起（除了垃圾收集帮助器之外）</div>
 
+* HotSpot 垃圾收集器:
+
 **来点干货** <span>![干货来袭][4]</span>
 ===========
 
