@@ -5,6 +5,15 @@ description: "Javaer -- My Honor"
 header-img: "img/home-bg.jpg"
 ---
 
+<style type="text/css">
+    img {
+        border: 3px;
+        height: 180px;
+        width: 120px;
+    }
+</style>
+
+
 # Some Illus About This Project
 
 - **作为自己的学习记录,算是对流逝的时间的一点见证吧**
@@ -17,13 +26,19 @@ header-img: "img/home-bg.jpg"
 
 资助本站:
 **献出一分钱也是爱**
+***
+
 ![一分][1]
 
 **土豪任性?金额你定**
+***
+
 ![任意金额][2]
 
 
 **探讨技术问题可加好友:**
+***
+
 ![我的微信][3]
 
 
