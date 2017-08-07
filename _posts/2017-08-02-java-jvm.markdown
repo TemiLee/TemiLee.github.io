@@ -62,6 +62,26 @@ Java jvm 的全面分析。对于一名`javaer`来说深入了解下 `jvm` 的�
 
     - TIPS:
         > <div class="smalltext">STW(Stop-The-World) :Java中一种全局暂停现象，全局停顿，所有Java代码停止,native代码可以执行，但不能与JVM交互.在执行垃圾收集算法时，Java应用程序的其他所有线程都被挂起（除了垃圾收集帮助器之外）</div>
+        > ![STW][5]
+
+**垃圾收集器**
+=============
+
+* 新生代：
+    - Serial:新生代串行回收器
+        - 它仅仅使用单线程进行垃圾回收
+        - 它是独占式的垃圾回收,进行垃圾回收时, 存在STW现象(Stop-The-World)
+        - 使用复制算法
+        - 适合CPU等硬件不是很好的场合
+        - 以client模式运行时, 它是默认的垃圾收集器
+        - -XX:+UseSerialGC 指定新生使用新生代串行收集器和老年代串行收集器
+    - ParNew:Serial收集器的多线程版本 (除Serial外，`只有它能与CMS收集器配合工作`)
+        - 将串行回收多线程化,
+        - 使用复制算法
+        - 垃圾回收时, 应用程序仍会暂停, 只不过由于是多线程回收, 在多核CPU上，回收效率会高于串行回收器, 反之在单核CPU， 效率会不如串行回收器
+        - XX:+UseParNewGC 新生代使用ParNew回收器, 老年代使用串行回收器
+        - XX:+UseConcMarkSweepGC 新生代使用ParNew回收器, 老年代使用CMS回收器(`最常用的选择`)
+        - XX:ParallelGCThreads=n 指回ParNew回收器工作时的线程数量, cpu核数小时8时, 其值等于cpu数量, 高于8时,可以使用公式(3+((5*CPU_count)/8))
 
 **来点干货** <span>![干货来袭][4]</span>
 ===========
@@ -188,3 +208,4 @@ Java jvm 的全面分析。对于一名`javaer`来说深入了解下 `jvm` 的�
 [2]: /img/jvmheap.jpg
 [3]: /img/jhat.png
 [4]: /img/ease.jpeg
+[5]: /img/stw.png
