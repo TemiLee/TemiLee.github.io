@@ -9,6 +9,7 @@ baseurl: ""
 header-img: img/home-bg.jpg
 headercolor: "#FFFFFF"
 logo: /img/logos/favicon.png
+modifyauthor: Temi Lee
 
 # Tertiary Parameters
 github_username:  TemiLee

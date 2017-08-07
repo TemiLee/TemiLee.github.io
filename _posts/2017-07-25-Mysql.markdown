@@ -2,8 +2,10 @@
 layout: post
 title:  "DEEP LEARNING OF MYSQL"
 date:   2017-07-25 05:01:29 +0100
-tags: MYSQL
+tags: [MYSQL,InnoDB]
 author: Temi Lee
+modifyauthor: Temi Lee
+lastmodify: 2017-08-08 01:27:29
 ---
 
 MYSQL 的结构组成、各组件作用、INNODB `索引`和`锁`的深入分析
@@ -83,9 +85,13 @@ MYSQL 的结构组成、各组件作用、INNODB `索引`和`锁`的深入分析
     > ![mysql][5]
 
     - InnoDB 的MVCC:
-        >TODO
+        > InnoDB 通过在每行记录上面增加两个隐藏的列来实现的，这两个列，一个保存了行的创建事务ID，一个保存了行的删除事务ID
+        > select: 只查找行的事务ID号小于或等于当前事务的ID(`确保事务读取的行，要么是在事务开始之前已经存在，要么是事务自身插入或修改的数据。`)，行的删除事务ID要么未定义，要么大于当前事务ID(`确保事务读取到的行，在事务开始之前未被删除`)。
+        > insert：innodb为新插入的每一行保存当前事务ID号作为创建事务ID
+        > delete: innodb为删除的每一行保存当前事务ID号作为行删除事务ID
+        > update：innodb插入一行新记录，保存保存当前事务ID号作为创建事务ID，同时保存当前事务ID号到原来的行作为行删除事务ID
 
-    - 一直认为mysql实现了 SQL92 的全部事务隔离级别，所以上图的情况在mysql中也是适用的，但是我在看《mysql性能调优与架构设计》这本书的时候发现上图加红色下滑线的部分在mysql中是不适用的，一会我会把我的逻辑演示出来，`在mysql的RR事务隔离中
+    - 一直认为mysql实现了 SQL92 的全部事务隔离级别，所以上图的情况在mysql中也是适用的，但是我在看《mysql性能调优与架构设计》这本书的时候发现上图加`红色下滑线`的部分在mysql中是不适用的，一会我会把我的逻辑演示出来，`在mysql的RR事务隔离中
     至少是通过MVCC机制消除了部分幻读的`
     - Innodb的锁：
         + >当 一个 事务 需要 给 某个 资源 加锁 的 时候， 如果 遇到 一个 共享 锁 正 锁定 着 自己 需要 的 资源， 它 会 再加 一个 共享 锁， 不过 不能 加 排他 锁。 但是， 如果 遇到 须要 锁定
@@ -251,6 +257,24 @@ MYSQL 的结构组成、各组件作用、INNODB `索引`和`锁`的深入分析
         当执行 <sup style="color:red">4</sup> 这条语句的时候，被阻塞，这是因为 `事务二` 除了给 shoesize 为 43 的行记录加了锁，另外还加了一个这样的间隙锁： [42 : 43] [43:44)
         执行 <sup style="color:red">5</sup> 这条语句的时候 因为间隙锁没有在43上加锁，所以执行成功。(43 为开区间)
 
+    最后看一下InnoDB 的幻读：
+        **幻读的定义:** 一个事务中多次进行相同范围的查询，结果不一样。即：一个事务可以读取到另外一个事务插入并提交的记录。
+
+     |事务一 | 事务二 |
+     |:----:|:-----:|
+     |select * from lock_test where shoesize>=43 and shoesize<=44 \G |  |
+     |  |   insert into lock_test values('guanyin',600,8,'female',43) \G|
+     |  |   commit; |
+     |select * from lock_test where shoesize>=43 and shoesize<=44 \G <br/> `此处查询结果条数并没有变化，未产生幻读`|  |
+     | select * from lock_test where shoesize>=43 and shoesize<=44 \G | |
+     |  select * from lock_test where shoesize>=43 and shoesize<=44 \G  <br/> `产生了幻读` | |
+
+
+      **看下百度百科对于幻读的定义：**
+        >
+          幻读是指当事务不是独立执行时发生的一种现象，例如第一个事务对一个表中的数据进行了修改，比如这种修改涉及到表中的“全部数据行”。同时，第二个事务也修改这个表中的数据，这种修改是向表中插入“一行新数据”。那么，以后就会发生操作第一个事务的用户发现表中还存在没有修改的数据行，就好象发生了幻觉一样.一般解决幻读的方法是增加范围锁RangeS，锁定检索范围为只读，这样就避免了幻读。
+
+        > 可见innodb确实存在这种意义上的幻读。
 
     **到这里 Innodb 在默认的RR事务隔离级别下 表锁、行锁、间隙锁的表现就结束啦 ,改天再学习下在其他事务隔离级别下的锁模式，到时候更新**
 

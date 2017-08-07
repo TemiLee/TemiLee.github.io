@@ -4,6 +4,8 @@ title:  "JVM Memory Model"
 date:   2017-08-02 05:01:29 +0100
 tags: [JAVA,JVM]
 author: Temi Lee
+modifyauthor: Temi Lee
+lastmodify: 2017-08-07 12:23:33
 ---
 Java jvm 的全面分析。对于一名`javaer`来说深入了解下 `jvm` 的内部构造对于我们了解程序的执行原理、优化代码执行、排查性能瓶颈是很有帮助的。
 
