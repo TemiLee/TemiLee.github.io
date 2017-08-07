@@ -1,28 +1,6 @@
-# Project Pages
+# Some Illus About This Project
 
-Project Pages is Jekyll Template specifically geared towards collaborative science. For more information, click [here](https://github.com/projectpages/project-pages/wiki/).
-
-# Nav Bar Jumbles
-
-If you have seemingly random pages popping up on your Nav Bar recently, this is due to the fact that GitHub/Jekyll changed a fundemental rule they used to render pages. 
-
-## CAUSE:
-It used to be that if a markdown file didn't have `---` frontmatter at the beginning, it wasn't rendered as a page. This was changed very recently (like in the last 2 days) so that every markdown file anywhere no matter what gets rendered as a page.  
-
-## FIX:
-
-1) Go to:
-
-`project-pages/plugin/projector/` or `yourreponame/plugin/projector/` and delete the `README.md` file. This can be done graphically for the non-Git-savvy by simply going to your:
-
-GitHub account -> Your Profile -> Repositories -> Project-Pages/Your Repo -> Plugin -> projector 
-
-and clicking on the files, then clicking on the "thrash can / delete this file" icon on the top right corner of the file.
-
-2) Go to:
-
-`project-pages/css/theme/` or `yourreponame/css/theme/` and delete the `README.md` file. This can be done graphically for the non-Git-savvy by simply going to your:
-
-GitHub account -> Your Profile -> Repositories -> Project-Pages/Your Repo -> Plugin -> projector 
-
-and clicking on the files, then clicking on the "thrash can / delete this file" icon on the top right corner of the file.
+- **作为自己的学习记录,算是对流逝的时间的一点见证吧**
+- **将学习中遇到的一些问题和收获,以及自己的见解分享出来供大家参考,希望能帮助到后来者的学习**
+- **如果你在本博客得到一些收获和成长那么欢迎持续关注,我会以至少一周一篇博客的速度持续更新**
+- **本人最近关注的技术点:redis的集群,mysql的高性能和优化,kafka消息队列**

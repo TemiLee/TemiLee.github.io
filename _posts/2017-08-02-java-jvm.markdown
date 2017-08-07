@@ -83,6 +83,8 @@ Java jvm 的全面分析。对于一名`javaer`来说深入了解下 `jvm` 的�
         - XX:+UseConcMarkSweepGC 新生代使用ParNew回收器, 老年代使用CMS回收器(`最常用的选择`)
         - XX:ParallelGCThreads=n 指回ParNew回收器工作时的线程数量, cpu核数小时8时, 其值等于cpu数量, 高于8时,可以使用公式(3+((5*CPU_count)/8))
 
+* HotSpot 垃圾收集器:
+
 **来点干货** <span>![干货来袭][4]</span>
 ===========
 
