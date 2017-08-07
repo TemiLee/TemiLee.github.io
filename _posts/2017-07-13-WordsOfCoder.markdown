@@ -14,6 +14,6 @@ category:   Phrase
 |STW     |Stop The World 指jvm在运行垃圾回收时暂停所有其他线程的表现|
 |Dead Lock|死锁，指程序中有环形加锁造成的相互等待|
 |RDBMS    |Relational Database Management System：关系数据库管理系统|
-|CAS      | Compare And Set 比较设置|
+|CAS      | Compare And Set 比较设置：利用cpu内置支持的cas指令避免静态条件的产生|
 |未完待续 |持续更新|
 

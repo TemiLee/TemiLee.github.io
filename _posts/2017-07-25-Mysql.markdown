@@ -64,17 +64,211 @@ MYSQL 的结构组成、各组件作用、INNODB `索引`和`锁`的深入分析
 * 索引详解:
     - B+Tree
         + InnoDB最重要的索引，根据聚簇索引和非聚簇索引实现不同。`聚簇索引` 的根子节点存储的是整条行记录,`非聚簇索引`,存储的是主键key
+        + InnoDB的表存储结构是基于 聚簇索引 的结构的 (当聚簇索引索引的主键是整型自增的时候，`插入数据就变成了硬盘追加写。可大幅缩短IO时间`）
+        + 左前缀匹配
+    - Hash
+        + 以字段的Hash值作为索引key 查询最好性能可以达到O(1)
+        缺点：
+        - Hash 索引只能够用于使用 = 或者 <=> 运算符的相等比较(但是速度更快)。Hash 索引不能够用于诸如 < 等用于查找一个范围值的比较运算符。`依赖于这种单值查找的系统被称为 "键-值存储"；对于这种系统，尽可能地使用 hash 索引。`
+        - 优化器不能够使用 hash 索引来加速 ORDER BY 操作。这种类型的索引不能够用于按照顺序查找下一个条目。
+        - MySql 无法使用 hash 索引估计两个值之间有多少行
+        - 查找某行记录必须进行全键匹配。而 B-tree 索引，任何该键的左前缀都可用以查找记录。
+
+* Innodb 的事务和锁
+    - 我们最为熟知SQL：1992 标准事务隔离级别和对应的几种问题
+        - 未提交读(Read Uncommitted)：允许脏读，也就是可能读取到其他会话中未提交事务修改的数据
+        - 提交读(Read Committed)：只能读取到已经提交的数据。Oracle等多数数据库默认都是该级别 (不重复读)
+        - 可重复读(Repeated Read)：可重复读。在同一个事务内的查询都是事务开始时刻一致的，InnoDB默认级别。在SQL标准中，该隔离级别消除了不可重复读，`但是还存在幻象读`
+        - 串行读(Serializable)：完全串行化的读，每次读都需要获得表级共享锁，读写相互都会阻塞
+    > ![mysql][5]
+
+    - InnoDB 的MVCC:
+        >TODO
+
+    - 一直认为mysql实现了 SQL92 的全部事务隔离级别，所以上图的情况在mysql中也是适用的，但是我在看《mysql性能调优与架构设计》这本书的时候发现上图加红色下滑线的部分在mysql中是不适用的，一会我会把我的逻辑演示出来，`在mysql的RR事务隔离中
+    至少是通过MVCC机制消除了部分幻读的`
+    - Innodb的锁：
+        + >当 一个 事务 需要 给 某个 资源 加锁 的 时候， 如果 遇到 一个 共享 锁 正 锁定 着 自己 需要 的 资源， 它 会 再加 一个 共享 锁， 不过 不能 加 排他 锁。 但是， 如果 遇到 须要 锁定
+        的 资源 已经 被 一个 排他 锁 占有， 则 只能 等待 该 锁定 释放 资源 之后 它 才能 获取 锁定 资源 并 添加 自己的 锁定。-- 《MySql性能调优与架构设计》
+        + >死锁的处理：会计 算出 两个 事务 各自 插入、 更新 或 删除 的 数据 量， 从而 来 判定 两个 事务 的 大小。 也就是说 哪个 事务所 改变 的 记录 条数 越多， 在 死锁 中就 越不 会被 回 滚 掉。
+                 -- 《MySql性能调优与架构设计》
+        + 表锁：由字面可知，就是给一张表加读锁，或者写锁，MySQL自身提供表锁定
+            - MySQL各 存储引擎中最大颗粒度的锁定机制。
+            - 获取锁和释放锁的消耗比较小
+        + 行锁：由字面可知，就是给一行数据加读锁，活着写锁
+            B b b b b b BUT 真的是这样嘛，事实是：行锁：给改行的索引增加读锁或写锁,若行没有索引，升级为表锁（`索引存在的必要性？`)
+            - 行锁不是Mysql自身提供的，而是由存储引擎实现
+            - 锁定对象的颗粒度小，并发性能大，会有死锁发生
+            - 获取锁和释放锁的消耗比较大
+        + 间隙锁：间隙锁也是加在索引上的，RR事务隔离级别会加间隙锁防止 `不可重复读`的情况
+
+* 做的一些测试，测试表和数据请在这里下载：
+
+    ***Test 1***
+
+    **开启两个事务顺序执行一下SQL**
+
+    |事务一 | 事务二|
+    |:----:|:-----:|
+    |set autocommit = 0; | set autocommit = 0;|
+    |select * from lock_test where age = 66 \G |  None|
+    |         None          | update table lock_test set name = 'ChengLong' where age = 66 \G Query OK, 1 row affected (0.00 sec)
+    |commit;                | commit;   |                                                                                   Rows matched: 1  Changed: 1  Warnings: 0|
+
+    **结论一:**
+
+        > Innodb通过MVCC机制 实现了多版本读取，查询语句不加锁
+
+     ***Test 2***
+
+     |事务一 | 事务二 |
+     |:----:|:-----:|
+     | <span> update lock_test set name = 'jack Chen' where age = 66 \G </span> |       |
+     |      |update lock_name set name = 'sicongli' where age = 25 \G   <br/> 语句执行不成功，被阻塞，等待过后会报错超时：<br/> `ERROR 1205 (HY000): Lock wait timeout  exceeded; try restarting transaction` |
+     |commit;   | commit;   |
+
+     **结论二:**
+        > 在 Innodb 的表中当更新条件的列没有索引时，将使用表级锁
+
+     ***Test 3***
+
+     |事务一 | 事务二 |
+     |:----:|:-----:|
+     |alter table lock_test add id int primary key auto_increment  \G | |
+     |  |   show create table lock_test <br/> `此处立即返回，可见表结构的更改不受事务的限制，反之还会影响事务的表现：见Test ｀ \G|
+     |commit;   | commit;   |
 
 
+     **此时数据库的数据：**
+
+     >
+           select * from lock_test \G
+          *************************** 1. row ***************************
+          name: jack Chen
+           age: 66
+            id: 1
+          *************************** 2. row ***************************
+          name: temi
+           age: 25
+            id: 2
+          *************************** 3. row ***************************
+          name: jiajingwen
+           age: 48
+            id: 3
+          *************************** 4. row ***************************
+          name: sunwukong
+           age: 500
+            id: 4
+          *************************** 5. row ***************************
+          name: zhubajie
+           age: 250
+            id: 5
+          5 rows in set (0.00 sec)
 
 
+     ***Test 4***
+
+     |事务一 | 事务二 |
+     |:----:|:-----:|
+     |update lock_test set name = 'jingwen' where id = 3 \G |   |
+     |      |   update lock_test set name = 'sunxingzhe' where id = 4 \G    <br/> Query OK, 1 row affected (0.00 sec) <br/> Rows matched: 1  Changed: 1  Warnings: 0  <br/> 此处立即返回，说明通过有索引的id列进行更新的时候行锁生效 |
+     |commit; | commit;|
+
+     **执行一下SQL更改表结构**
+     > alter table lock_test add sex varchar(10) \G
+     > alter table lock_test add index sex_index(sex) \G
+     > update lock_test set sex = 'male' \G
+     > update lock_test set sex = 'female' where id = 3 \G
+     > commit;
+
+     ***Test 5***
+
+     |事务一 | 事务二 |
+     |:----:|:-----:|
+     |update lock_test set age = age + 1 where set = 'male';    |   |
+     |  |   update lock_test set age = age + 10 where sex = 'female' \G ![惊讶][6] <br/> 什么情况，竟然阻塞了 |
+
+     ***
+
+     我承认做完这个测试我MengBi了三分钟，我想证明的是，在使用有索引的键更新数据的时候，使用不同的索引键是不加锁的，并且书上也是这样写的，直到三分钟后我执行了如下两条SQL：
+     > explain update lock_test set age = age + 1 where sex = 'male';
+     >
+       +----+-------------+-----------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+       | id | select_type | table     | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra       |
+       +----+-------------+-----------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+       |  1 | UPDATE      | lock_test | NULL       | index | sex_index     | PRIMARY | 4       | NULL |    5 |   100.00 | Using where |
+       +----+-------------+-----------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+       1 row in set (0.01 sec)
+
+     > explain update lock_test set age = age + 10 where sex = 'female';
+     >
+       +----+-------------+-----------+------------+-------+---------------+-----------+---------+-------+------+----------+-------------+
+       | id | select_type | table     | partitions | type  | possible_keys | key       | key_len | ref   | rows | filtered | Extra       |
+       +----+-------------+-----------+------------+-------+---------------+-----------+---------+-------+------+----------+-------------+
+       |  1 | UPDATE      | lock_test | NULL       | range | sex_index     | sex_index | 33      | const |    1 |   100.00 | Using where |
+       +----+-------------+-----------+------------+-------+---------------+-----------+---------+-------+------+----------+-------------+
+       1 row in set (0.00 sec)
+
+     SOGA,<span>![Soga][7]</span>,原来第一条语句由于 mysql 优化器觉得我的`索引可用性` <sup>这个概念大家去网上查一下</sup> 太低，直接走了一个全表扫描，rows ＝ 5；
+
+     **再改下表结构:**
+     >
+       alter table  lock_test add shoesize int default 43  comment '鞋码';
+       alter table lock_test add index(shoesize) ;
+       update lock_test set shoesize = 46 where id = 4 \G
+       update lock_test set shoesize = 42 where id = 2 \G
+       update lock_test set shoesize = 44 where id = 5 \G
+       commit;
+
+     >
+       +------------+------+----+--------+----------+
+       | name       | age  | id | sex    | shoesize |
+       +------------+------+----+--------+----------+
+       | jack Chen  |   66 |  1 | male   |       43 |
+       | temi       |   25 |  2 | male   |       42 |
+       | jingwen    |   48 |  3 | female |       43 |
+       | sunxingzhe |  500 |  4 | male   |       46 |
+       | zhubajie   |  250 |  5 | male   |       44 |
+       +------------+------+----+--------+----------+
+
+     **可以啦，再来测试下**
+
+     |事务一 | 事务二 |
+     |:----:|:-----:|
+     |update lock_test  set age = age + 1 where shoesize = 42 \G    |   |
+     |  |   update lock_test set age = age + 1 where shoesize = 43 \G <sup style="color:red">1</sup> <br/> 没有阻塞哦，顺利返回 <span>![开心][7]</span> |
+     |update lock_test set age = age + 1 where id = 3 \G <sup style="color:red">2</sup> <br/> 阻塞了 ctr+c 中断下 |  |
+     |update lock_test set age = age + 1 where id = 1 \G <sup style="color:red">3</sup> <br/> 同样阻塞  |  |
+     |insert into lock_test values('rulai',1000,6,'male',42) \G <sup style="color:red">4</sup> 同样阻塞 |   |
+     | insert into lock_test values('rulai',1000,6,'male',44) \G <sup style="color:red">5</sup> 执行成功 |  |
+
+     <br/>
+     **看到这里反正我没有懵,解释下:**
+
+        当执行 <sup style="color:red">1</sup> 这条sql的时候 InnoDB 通过索引 KEY `shoesize` (`shoesize`) 为43 实际上锁住了两条记录：id为1、3 的两条记录
+        之后我们执行 <sup style="color:red">2</sup> ,<sup style="color:red">3</sup>   这两条SQL的时候虽然都是通过唯一主键ID定位记录，但是两条记录此时已被加行锁 <br/>
+
+        当执行 <sup style="color:red">4</sup> 这条语句的时候，被阻塞，这是因为 `事务二` 除了给 shoesize 为 43 的行记录加了锁，另外还加了一个这样的间隙锁： [42 : 43] [43:44)
+        执行 <sup style="color:red">5</sup> 这条语句的时候 因为间隙锁没有在43上加锁，所以执行成功。(43 为开区间)
 
 
+    **到这里 Innodb 在默认的RR事务隔离级别下 表锁、行锁、间隙锁的表现就结束啦 ,改天再学习下在其他事务隔离级别下的锁模式，到时候更新**
 
 
+    参考资料：
+    - 《mysql性能调优与架构设计》
+    - 《高性能MySQL》
+    - <a href = "http://dev.mysql.com/doc/refman/5.7/en/innodb-locking-transaction-model.html">http://dev.mysql.com/doc/refman/5.7/en/innodb-locking-transaction-model.html</a>
+
+    <a href = "/about"  style= "color: #2aa198;align-self: center;font-size: 25px;" >感觉还不错的话来打赏一下吧</a>
+    <br/>
+    <a href = "/music" style= "color: #2aa198;align-self: center;font-size: 25px;" >累的话就去听首歌</a>
 
 
 [1]: /img/mysql_simple2.jpeg
 [2]: /img/mysql_simple.jpeg
 [3]: /img/mysqlFrame.jpg
 [4]: /img/Surprised.jpeg
+[5]: /img/isalution.jpeg
+[6]: /img/Surprised.jpeg
+[7]: /img/ease.jpeg
