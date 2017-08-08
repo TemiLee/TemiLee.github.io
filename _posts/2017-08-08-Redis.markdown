@@ -4,6 +4,8 @@ title:  "Redis Cache"
 date:   2017-08-08 03:19:49 +0100
 tags: [Redis,Cache]
 author: Temi Lee
+modifyauthor: Temi Lee
+lastmodify: 2017-08-09 03:11:52
 ---
 
 Redis 在系统中的必要性：对于一个服务其性能瓶颈大多都在DB，DB一般来说是在硬盘上拿数据，而缓存是基于内存，速度更快
@@ -31,6 +33,172 @@ Redis 在系统中的必要性：对于一个服务其性能瓶颈大多都在DB
 |   SET    |无序、不重复的集合| 元素的添加(`SADD O(N)， N 是被添加的元素的数量。`)、获取(`SPOP O(1)、 SRANDMEMBER O(N) N 为返回数组的元素个数。`)、删除(`SPOP O(1)`)、交集(`SINTER O(N * M) N 为给定集合当中基数最小的集合 M 为给定集合的个数。`、并集(`SUNION O(N)`、差集(`SDIFF O(N)`)|
 |   HASH    |包含键值对的无序散列表    |添加(`HSET O(1)`)、获取(`HGET O(1)`)、移除单个键值对(`HDEL O(N) N 为要删除的域的数量`)；获取所有键值对(`HGETALL O(N)`)|
 |   SortedSet|有序的集合|添加、获取、删除单个元素；根据分值范围(`ZRANGEBYSCORE O(log(N)+M) N 为有序集的基数 M 为被结果集的基数`)或者成员来获取元素|
+
+String：
+
+    通过关键字存储对象的实例:
+    set users:leto "{name: leto, planet: dune, likes: [spice]}"
+    strlen users:leto
+    (integer) 42
+    范围获取String：
+    getrange users:leto 27 40
+    "likes: [spice]"
+    append users:leto " OVER 9000!!"
+    (integer) 54
+
+这样做的局限：
+
+    不能有效地提取、更新一段范围内的JSON文件,或者为其附加一些值
+
+String其他的一些应用：
+
+    incr stats:page:about
+    (integer) 1
+    incr stats:page:about
+    (integer) 2
+
+    incrby ratings:video:12333 5
+    (integer) 5
+    incrby ratings:video:12333 3
+    (integer) 8
+    TODO:Bitmaps--http://blog.getspool.com/2011/11/29/fast-easy-realtime-metrics-using-redis-bitmaps/
+
+Hashes:
+
+    hset users:goku powerlevel 9000
+    hget users:goku powerlevel
+    hmset users:goku race saiyan age 737
+    hmget users:goku race powerlevel
+    hgetall users:goku
+    hkeys users:goku
+    hdel users:goku age
+
+
+    Hashes的一个妙用：
+    由于Redis的keys命令需要遍历所有的key，是一个比较费时的操作
+    比如我们要查看userID为 1233的用户的所有信息：
+    keys user:1233:*
+    为了增高效率我们可以用Hashes实现:
+    hset user:1233 name Temi
+    hset user:1233 age 25
+    查看用户的所有信息:
+    hkeys bugs:1233
+
+
+***散列数据结构比普通的字符串数据结构具有更多的可操作性。使得应用程序能够提取、更新和删除具体的数据片段，而不必去获取或写入整个值。***
+
+Lists:
+
+    lpush newusers goku
+    ltrim newusers 0 50
+    lrange newusers 0 10
+
+ltrim:
+- 删除掉指定范围外的值
+- 具有O(N)时间复杂度的操作，N是被删除的值的数量。上例在增加一个用户后执行ltrim 所以时间复杂度为O(1)
+
+Sets:
+
+    使用集合数据结构实现朋友名单:
+    sadd friends:leto ghanima paul chani jessica
+    sadd friends:duncan paul jessica alia
+    判断用户X是不是用户Y的朋友:（O(1)时间复杂度）
+    sismember friends:leto jessica
+    sismember friends:leto vladimir
+    查看共同好友:
+    sinter friends:leto friends:duncan
+    共同好友并保存:
+    sinterstore friends:leto_duncan friends:leto friends:duncan
+
+Sorted Sets:<sup>秩:menber在该排列里的次序</sup>
+
+    zadd friends:duncan 70 ghanima 95 paul 95 chani 75 jessica 1 vladimir
+    获取分值 90 到 100 的总数
+    zcount friends:duncan 90 100
+    获取chani元素的倒叙秩
+    zrevrank friends:duncan chani
+
+redis的一些通用命令:
+
+    info:获取redis的配置信息
+    multi, exec 开启执行事务
+    keys 获取制定模式的key
+    设置key的过期时间:30秒过期
+    expire pages:about 30
+    在制定linux时间戳过期:
+    expireat pages:about 1356933600
+    ttl:查看key的有效时间
+    persist:持久化key
+    在一个单独的原子命令里设置一个字符串值，同时里指定一个生存期
+    setex pages:about 30 '<h1>about us</h1>....'
+    monitor:查看Redis正在做什么
+    slowlog:性能剖析工具
+    config set slowlog-log-slower-than 0
+    slowlog len
+    slowlog get
+    slowlog get 1
+        1) 1) (integer) 11  -- 一个自动递增的id
+           2) (integer) 1502074299  -- 一个Unix时间戳，表示命令开始运行的时间
+           3) (integer) 133519  -- 一个微妙级的时间，显示命令运行的总时间
+           4) 1) "keys" 该命令以及所带参数
+              2) "order*"
+
+     Sort:
+          基于数字的升序排序
+          rpush users:leto:guesses 5 9 10 2 4 10 19 2
+          sort users:leto:guesses
+
+          更具字典顺序对string排序
+          sadd friends:ghanima leto paul chani jessica alia duncan
+          sort friends:ghanima limit 0 3 desc alpha
+
+          根据key值匹配进行排序
+          sadd watch:leto 12339 1382 338 9338
+          set severity:12339 3
+          set severity:1382 2
+          set severity:338 5
+          set severity:9338 4
+
+          sort watch:leto by severity:* desc
+
+          根据制定hashes filed进行排序，并制定查询字段
+          hset bug:12339 severity 3
+          hset bug:12339 priority 1
+          hset bug:12339 details "{id: 12339, ....}"
+
+          hset bug:1382 severity 2
+          hset bug:1382 priority 2
+          hset bug:1382 details "{id: 1382, ....}"
+
+          hset bug:338 severity 5
+          hset bug:338 priority 3
+          hset bug:338 details "{id: 338, ....}"
+
+          hset bug:9338 severity 4
+          hset bug:9338 priority 2
+          hset bug:9338 details "{id: 9338, ....}"
+
+          sort watch:leto by bug:*->priority get bug:*->details
+
+          结果缓存
+          sort watch:leto by bug:*->priority get bug:*->details store watch_by_priority:leto
+
+
+          一些管理命令:
+          config get *log* : 显示一个设置值
+          requirepass(使用config set命令或redis.conf文件 设置) :设置redis的密码验证
+          rename-command : 重命名一些重要命令为混乱的字符串，从而获得一些安全性。eg:
+          rename-command CONFIG 5ec4db169f9d4dddacbfb0c26ea7e5ef
+          将新名字设置为一个空字符串，可以禁用掉一个命令。
+
+
+
+
+完整的Redis配置在<a href="/files/redis.conf">这里</a>
+
+参考文献:<a href="https://www.kancloud.cn/thinkphp/little-redis-book/39117">《The Little Redis Book》</a>
+
+完整的Redis命令列表在<a href="https://redis.io/commands">这里</a>,<a href="http://doc.redisfans.com/index.html">译文</a>
 
 
 [1]: /img/blog/redis/redis_sds.png
