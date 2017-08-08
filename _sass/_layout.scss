@@ -140,10 +140,22 @@
     margin-bottom: $spacing-unit;
 }
 
+//.post-title {
+//    color: $grey-color;
+//    font-family: "Playfair Display";
+//    font-size: 32px;
+//    letter-spacing: -1px;
+//    line-height: 1;
+//
+//    @include media-query($on-laptop) {
+//        font-size: 36px;
+//    }
+//}
+
 .post-title {
-    color: $grey-color;
-    font-family: "Playfair Display";
-    font-size: 42px;
+    color: $brand-color;
+    font-family: "Montserrat";
+    font-size: 22px;
     letter-spacing: -1px;
     line-height: 1;
 
