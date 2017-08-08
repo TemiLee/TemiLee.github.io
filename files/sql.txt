@@ -1,0 +1,6 @@
+Create Table: CREATE TABLE `lock_test` (
+  `name` varchar(20) DEFAULT NULL,
+  `age` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+
+insert into lock_test values('chenglong',66),('temi',25),('jiajingwen',48),('sunwukong',500),('zhubajie',250);
