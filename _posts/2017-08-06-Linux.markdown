@@ -4,8 +4,83 @@ title:  "Linux Command"
 date:   2017-08-06 05:01:29 +0100
 tags: Linux
 author: Temi Lee
-<!-- modifyauthor: Temi Lee -->
-<!-- lastmodify: 2017-08-08 01:27:29 -->
-published: false
+ modifyauthor: Temi Lee
+ lastmodify: 2017-08-11 01:27:29
 ---
+
+程序员应该懂得LINUX知识
+
+**free(-m ,-g)** :查看系统内存使用
+
+                 total       used       free     shared    buffers     cached
+    Mem:      16330820   15789248     541572          0     727736   10234092   //OS 的角度
+    -/+ buffers/cache:    4827420   11503400    //内存的角度
+    Swap:            0          0          0
+
+    shared:进程共享内存总额
+    buffers/cached:磁盘缓存的大小。
+
+**cat /proc/meminfo** 查看详细的内存参数
+
+    MemTotal:       16330820 kB
+    MemFree:         1629040 kB
+    Buffers:          812052 kB
+    Cached:          9095200 kB
+    SwapCached:            0 kB
+    Active:         10344496 kB
+    Inactive:        3781188 kB
+    Active(anon):    4280048 kB
+    Inactive(anon):     5320 kB
+    Active(file):    6064448 kB
+    Inactive(file):  3775868 kB
+    Unevictable:           0 kB
+    Mlocked:               0 kB
+    SwapTotal:             0 kB
+    SwapFree:              0 kB
+    Dirty:               220 kB
+    Writeback:             0 kB
+    AnonPages:       4207864 kB
+    Mapped:            91764 kB
+    Shmem:             66936 kB
+    Slab:             374344 kB
+    SReclaimable:     326748 kB
+    SUnreclaim:        47596 kB
+    KernelStack:       12576 kB
+    PageTables:        72844 kB
+    NFS_Unstable:          0 kB
+    Bounce:                0 kB
+    WritebackTmp:          0 kB
+    CommitLimit:     8165408 kB
+    Committed_AS:    9248496 kB
+    VmallocTotal:   34359738367 kB
+    VmallocUsed:       40584 kB
+    VmallocChunk:   34359695484 kB
+    HardwareCorrupted:     0 kB
+    AnonHugePages:   3680256 kB
+    HugePages_Total:       0
+    HugePages_Free:        0
+    HugePages_Rsvd:        0
+    HugePages_Surp:        0
+    Hugepagesize:       2048 kB
+    DirectMap4k:        6144 kB
+    DirectMap2M:    16771072 kB
+
+
+**/proc/pid/statm 进程所占用的内存**
+    cat /proc/22081/statm
+    1522661 228488 6135 1 0 1483539 0
+
+    参数分别表示：
+    任务虚拟地址空间大小
+    正在使用的物理内存大小
+    共享页数
+    程序所拥有的可执行虚拟内存大小
+    被映像倒任务的虚拟内存空间的库的大小
+    程序数据段和用户态的栈的大小
+    脏页数量
+
+
+ **fdisk** :查看磁盘使用情况
+
+
 
