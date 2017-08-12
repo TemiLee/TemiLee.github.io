@@ -4,8 +4,8 @@ title:  "Linux Command"
 date:   2017-08-06 05:01:29 +0100
 tags: Linux
 author: Temi Lee
- modifyauthor: Temi Lee
- lastmodify: 2017-08-11 01:27:29
+modifyauthor: Temi Lee
+lastmodify: 2017-08-11 01:27:29
 ---
 
 程序员应该懂得LINUX知识
