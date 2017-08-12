@@ -2,7 +2,7 @@
 layout: post
 title:  "Redisdeepgoing"
 date:   2017-08-08 04:40:42
-tags: [Redis,Cache]
+tags: [REDIS,CACHE]
 author: Temi Lee
 published: false
 ---

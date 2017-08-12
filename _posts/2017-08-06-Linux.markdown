@@ -2,7 +2,7 @@
 layout: post
 title:  "Linux Command"
 date:   2017-08-06 05:01:29 +0100
-tags: Linux
+tags: LINUX
 author: Temi Lee
 modifyauthor: Temi Lee
 lastmodify: 2017-08-11 01:27:29
@@ -80,7 +80,11 @@ lastmodify: 2017-08-11 01:27:29
     脏页数量
 
 
- **fdisk** :查看磁盘使用情况
+**fdisk** :查看磁盘使用情况
 
+**删除文件**
+通过重定向到 Null 来清空文件内容
 
+echo "" > access.log
+cat /dev/null > access.log
 

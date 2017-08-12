@@ -2,7 +2,7 @@
 layout: post
 title:  "Redis Cache"
 date:   2017-08-08 03:19:49 +0100
-tags: [Redis,Cache]
+tags: [REDIS,CACHE]
 author: Temi Lee
 modifyauthor: Temi Lee
 lastmodify: 2017-08-09 03:11:52

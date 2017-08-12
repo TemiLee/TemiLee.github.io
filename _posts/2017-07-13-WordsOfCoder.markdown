@@ -2,7 +2,7 @@
 layout:     post
 title:      Phrase Of Coder
 author:     Temi Lee
-tags: 		Phrase
+tags: 		PHRASE
 subtitle:   Some Phrase and Shorthand
 category:   Phrase
 modifyauthor: Temi Lee
