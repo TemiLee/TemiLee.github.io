@@ -10,6 +10,10 @@ author: Temi Lee
 <br/><br/>
 
 **Java 自带的线程池:Executor**
+为什么要使用线程池:
+- 线程复用，节省创建和销毁线程的消耗
+- 方便对需要执行的task进行统一的管理
+- 手动创建Thread类有安全风险(比如在构造方法中进行this调用，将会暴漏一个未初始化完成的Thread类对象)
 
 Executor 框架包括:Executor，Executors，ExecutorService，CompletionService，Future，Callable
 
@@ -149,6 +153,10 @@ Executor 框架包括:Executor，Executors，ExecutorService，CompletionService
 
 - Executors 为Executor提供一些帮助和工厂方法，内部最终调用ThreadPoolExecutor线程池实现类
 另外还提供了 Runnable 接口转Callable的一些工具方法
+三个创建线程池的方法:
+- newFixedThreadPool  : 创建固定数目线程的线程池。
+- newCachedThreadPool : 创建一个可缓存的线程池。
+- newSingleThreadExecutor : 创建一个单线程化的Executor。
 
 - ThreadPoolExecutor 线程池的实现类，类结构如下:
 ![ThreadPoolExecutor类图][1]
