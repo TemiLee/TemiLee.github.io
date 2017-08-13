@@ -86,7 +86,8 @@
     .n { color: #f8f8f2 } /* Name */
     .o { color: #f92672 } /* Operator */
     .p { color: #f8f8f2 } /* Punctuation */
-    .cm { color: #75715e ;white-space: pre-wrap!important;} /* Comment.Multiline */
+    //.cm { color: #75715e ;white-space: pre-wrap!important;} /* Comment.Multiline */
+    .cm { color: #2F8722 ;white-space: pre-wrap!important;} /* Comment.Multiline */
     .cp { color: #75715e } /* Comment.Preproc */
     .c1 { color: #75715e } /* Comment.Single */
     .cs { color: #75715e } /* Comment.Special */
