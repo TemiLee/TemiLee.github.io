@@ -164,3 +164,29 @@ explain select count(1) as num ,d.band as band from (  select a.id as id ,c.band
 - ﻿Packed: 索引的压缩方式，﻿如果没有被压缩，则为NULL。
 - ﻿Null: 索引含有null:﻿YES
 - ﻿Index_type: 索引的类型(﻿BTREE, FULLTEXT, HASH, RTREE)
+
+**SHOW ENGINES :** 查看mysql支持的存储引擎
+{% highlight java %}
+    +--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+    | Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
+    +--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+    | MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |
+    | MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |
+    | CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
+    | BLACKHOLE          | YES     | /dev/null storage engine (anything you write to it disappears) | NO           | NO   | NO         |
+    | MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables      | NO           | NO   | NO         |
+    | FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |
+    | ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |
+    | InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+    | PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |
+    +--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+    9 rows in set (0.00 sec)
+{% endhighlight %}
+
+- Engine 引擎名称
+- Suuport YSE表示支持，DEFAULT表示为默认引擎
+- Commnet 描述信息
+- Transaction  是否支持事务
+- XA 是否支持分布式事务
+- Savepoint 是否支持保存点，支持事务的引擎才支持保存点
+

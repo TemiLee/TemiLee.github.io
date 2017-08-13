@@ -20,5 +20,7 @@ lastmodify: 2017-08-09 18:11:52
 |ABA 问题 | 在通过值比较实现的CAS中存在重复更新的情况（幂等性的更新) 通常这对我们的逻辑没有影响，如果要避免，则要更改为比较版本号的CAS|
 |JDK|Java Development Kit,java开发工具包|
 |JRE|Java Runtime Environment ,java运行时环境|
+|extensible|可扩展的|
+|decoupling|解耦|
 |未完待续 |持续更新|
 
