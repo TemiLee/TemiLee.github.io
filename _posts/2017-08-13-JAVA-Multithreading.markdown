@@ -1,9 +1,11 @@
 ---
 layout: post
 title:  "JAVA Multithreading"
-date:   2017-08-12 16:54:13
+date:   2017-08-13 16:54:13
 tags: JAVA
 author: Temi Lee
+lastmodify: 2017-08-13 19:17:33
+modifyauthor: Temi Lee
 ---
 
 **在JDK1.5 中引入了一些新的并发API，位于java.util.concurrent包下，本篇博客旨在介绍本包下一些常用的API**

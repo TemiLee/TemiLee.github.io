@@ -5,8 +5,8 @@ author:     Temi Lee
 tags: 		PHRASE
 subtitle:   Some Phrase and Shorthand
 category:   Phrase
+lastmodify: 2017-08-13 19:17:33
 modifyauthor: Temi Lee
-lastmodify: 2017-08-09 18:11:52
 ---
 
 ***
