@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "JAVA Multithreading"
-date:   2017-08-13 16:54:13
+date:   2017-08-12 16:54:13
 tags: JAVA
 author: Temi Lee
 ---
@@ -238,6 +238,28 @@ Executor 框架包括:Executor，Executors，ExecutorService，CompletionService
     }
 {% endhighlight %}
 
+***
+
+**java的锁机制**
+
+锁的两个性质:
+- 原子性(atomicity) 加锁的共享代码，在同一时刻只能有一个线程执行，从而防止多个线程在更新共享状态时产生冲突
+- 可见性(visibility) 保证一个线程所做的改变对另外一个线程可见，用于排除各种编译器优化和内存缓存带来的反常行为
+
+synchronized 关键字:
+- 可重入锁实现
+- 可加在代码块，或方法上，默认锁住当前对象
+
+ReentrantLock 类:
+- 可重入锁实现
+- 可选择公平锁、非公平锁
+- 使用CAS原理实现加锁
+- 具有锁投票、定时锁、中断锁等待等功能
+
+Object 类关于线程的两个方法:
+- wait() 当前线程在此对象上等待直到另外一个线程调用此对象的notify() 活着 notifyAll()方法。
+在调用此方法时，当前线程必须持有此对象的对象锁(否则将会抛出 IllegalMonitorStateException异常)，wait后将会释放占用的对象锁
+- notify() 唤醒在此对象上等待的线程
 
 [1]: /img/blog/multithreading/multithreading.png
 
