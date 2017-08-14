@@ -278,6 +278,10 @@ FrameworkServlet.java
 		//父 SpringContext
 		wac.setParent(parent);
 		// 设置资源文件位置(web.xml 设置的 contextConfigLocation 属性)
+        // <context-param>
+        //    <param-name>contextConfigLocation</param-name>
+        //    <param-value>classpath:beans.xml</param-value>
+        // </context-param>
 		wac.setConfigLocation(getContextConfigLocation());
 
         //配置和刷新 ApplicationContext
@@ -453,6 +457,49 @@ public void refresh() throws BeansException, IllegalStateException {
         }
     }
 }
+
+{% endhighlight %}
+
+
+先来看一下 prepareRefresh() 方法都做了什么(主要是初始化 xml 文件的设置和验证):
+
+{% highlight java %}
+AbstractApplicationContext.java
+
+    /**
+	 * Prepare this context for refreshing, setting its startup date and
+	 * active flag as well as performing any initialization of property sources.
+	 *
+	 * 为 Spring 上下文的初始化做一些准备工作，设置它的启动时间、激活标志以及
+	 * 执行来自配置文件的初始化操作
+	 *
+	 */
+	protected void prepareRefresh() {
+		this.startupDate = System.currentTimeMillis();
+		this.closed.set(false);
+		this.active.set(true);
+
+		if (logger.isInfoEnabled()) {
+			logger.info("Refreshing " + this);
+		}
+
+		// Initialize any placeholder property sources in the context environment
+		// 注释这句话没看明白是什么意思，这个方法在这里是一个模版方法，
+		// AbstractRefreshableWebApplicationContext 类覆盖了此方法，
+		// 大致内容就是设置一些环境参数，初始化xml文件位置什么的
+		initPropertySources();
+
+		// Validate that all properties marked as required are resolvable
+		// see ConfigurablePropertyResolver#setRequiredProperties
+		// 验证 xml 文件所有配置的属性是可解析的
+		// 进入方法内部可以看到主要是排除 key 为空的情况
+		getEnvironment().validateRequiredProperties();
+
+		// Allow for the collection of early ApplicationEvents,
+		// to be published once the multicaster is available...
+		// 当 multicaster 可用时就允许发布早期的事件 TODO
+		this.earlyApplicationEvents = new LinkedHashSet<ApplicationEvent>();
+	}
 
 {% endhighlight %}
 
