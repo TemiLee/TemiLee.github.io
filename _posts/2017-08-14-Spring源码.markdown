@@ -288,6 +288,51 @@ FrameworkServlet.java
 
 {% endhighlight %}
 
+继续 configureAndRefreshWebApplicationContext 这个方法
+
+{% highlight java %}
+FrameworkServlet.java
+
+    protected void configureAndRefreshWebApplicationContext(ConfigurableWebApplicationContext wac) {
+		if (ObjectUtils.identityToString(wac).equals(wac.getId())) {
+			// The application context id is still set to its original default value
+			// -> assign a more useful id based on available information
+
+			//在这里设置 context id 默认是org.springframework.web.context.WebApplicationContext:+你项目的
+			// ContextPath + "/" + ServletName
+
+			if (this.contextId != null) {
+				wac.setId(this.contextId);
+			}
+			else {
+				// Generate default id...
+				wac.setId(ConfigurableWebApplicationContext.APPLICATION_CONTEXT_ID_PREFIX +
+						ObjectUtils.getDisplayString(getServletContext().getContextPath()) + "/" + getServletName());
+			}
+		}
+
+		wac.setServletContext(getServletContext());
+		wac.setServletConfig(getServletConfig());
+		wac.setNamespace(getNamespace());
+		wac.addApplicationListener(new SourceFilteringListener(wac, new ContextRefreshListener()));
+
+		// The wac environment's #initPropertySources will be called in any case when the context
+		// is refreshed; do it eagerly here to ensure servlet property sources are in place for
+		// use in any post-processing or initialization that occurs below prior to #refresh
+		ConfigurableEnvironment env = wac.getEnvironment();
+		if (env instanceof ConfigurableWebEnvironment) {
+			((ConfigurableWebEnvironment) env).initPropertySources(getServletContext(), getServletConfig());
+		}
+
+		postProcessWebApplicationContext(wac);
+		applyInitializers(wac);
+		wac.refresh();
+	}
+
+{% endhighlight %}
+
+
+
 AbstractApplicationContext 的 refresh() 方法，这个方法进行Bean配置资源文件的加载、解析、Bean定义的注册、组件初始化
 这个方法的实现是同步的，不允许并发调用
 
