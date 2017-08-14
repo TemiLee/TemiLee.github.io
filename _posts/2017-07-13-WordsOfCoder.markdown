@@ -22,5 +22,7 @@ modifyauthor: Temi Lee
 |JRE|Java Runtime Environment ,java运行时环境|
 |extensible|可扩展的|
 |decoupling|解耦|
+|dangling |悬空，闲置|
+|Instantiate | 实例|
 |未完待续 |持续更新|
 

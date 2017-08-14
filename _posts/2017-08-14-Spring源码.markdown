@@ -1,0 +1,277 @@
+---
+layout: post
+title:  "Spring Resource"
+date:   2017-08-13 16:54:13
+tags: [JAVA,SPRING]
+author: Temi Lee
+lastmodify: 2017-08-13 19:17:33
+modifyauthor: Temi Lee
+---
+
+最近看了一下Spring的源码，主要是了解下spring的启动流程和运行原理，我的项目中使用了
+Spring MVC ,在配置了SpringMVC 的 DispatcherServlet后springbean容器的初始化由MVC启动类DispatcherServlet 触发
+
+<br/>
+本文基于Spring 的4.3.2.RELEASE版本
+
+**DispatcherServlet:类图**
+![DispatcherServlet][1]
+
+我们知道Servlet拥有一个空的初始化方法: `init()`,初步猜测SpringMVC在此方法中初始化
+Bean容器 `webApplicationContext`,事实上整个创建webApplicationContext的过程都是在
+DispatcherServlet的父类FrameworkServlet中完成的
+
+HttpServletBean覆盖了HttpServlet的 `init()` 方法:
+
+{% highlight java %}
+/**
+ * Map config parameters onto bean properties of this servlet, and
+ * invoke subclass initialization.
+ *
+ * 将设置的参数映射到指定servlet的属性上，并触发子类的初始化
+ *
+ * @throws ServletException if bean properties are invalid (or required
+ * properties are missing), or if subclass initialization fails.
+ */
+@Override
+public final void init() throws ServletException {
+    if (logger.isDebugEnabled()) {
+        logger.debug("Initializing servlet '" + getServletName() + "'");
+    }
+    // Set bean properties from init parameters.
+    try {
+        PropertyValues pvs = new ServletConfigPropertyValues(getServletConfig(), this.requiredProperties);
+        BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
+        ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext());
+        bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, getEnvironment()));
+        initBeanWrapper(bw);
+        bw.setPropertyValues(pvs, true);
+    }
+    catch (BeansException ex) {
+        logger.error("Failed to set bean properties on servlet '" + getServletName() + "'", ex);
+        throw ex;
+    }
+    // Let subclasses do whatever initialization they like.
+    // 模版方法，让子类实现特定的初始化，webApplicationContext 的初始化就是在子类
+    // FrameworkServlet 覆盖的此方法中
+    initServletBean();
+    if (logger.isDebugEnabled()) {
+        logger.debug("Servlet '" + getServletName() + "' configured successfully");
+    }
+}
+{% endhighlight %}
+
+FrameworkServlet的 `initServletBean()` 方法:
+
+{% highlight java %}
+/**
+ * Overridden method of {@link HttpServletBean}, invoked after any bean properties
+ * have been set. Creates this servlet's WebApplicationContext.
+ *
+ * 覆盖了HttpServletBean方法，在所有Bean的属性设置后被调用，创建这个Servlet的WebApplicationContext
+ *
+ */
+@Override
+protected final void initServletBean() throws ServletException {
+    getServletContext().log("Initializing Spring FrameworkServlet '" + getServletName() + "'");
+    if (this.logger.isInfoEnabled()) {
+        this.logger.info("FrameworkServlet '" + getServletName() + "': initialization started");
+    }
+    long startTime = System.currentTimeMillis();
+    try {
+        // 在这里初始化 WebApplicationContext
+        this.webApplicationContext = initWebApplicationContext();
+        initFrameworkServlet();
+    }
+    catch (ServletException ex) {
+        this.logger.error("Context initialization failed", ex);
+        throw ex;
+    }
+    catch (RuntimeException ex) {
+        this.logger.error("Context initialization failed", ex);
+        throw ex;
+    }
+    if (this.logger.isInfoEnabled()) {
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        this.logger.info("FrameworkServlet '" + getServletName() + "': initialization completed in " +
+                elapsedTime + " ms");
+    }
+}
+{% endhighlight %}
+
+接着看一下 `initWebApplicationContext` 方法:
+
+{% highlight java %}
+/**
+ * Initialize and publish the WebApplicationContext for this servlet.
+ * <p>Delegates to {@link #createWebApplicationContext} for actual creation
+ * of the context. Can be overridden in subclasses.
+ *
+ * 初始化Servlet的 WebApplicationContext，这个方法内部是调用createWebApplicationContext
+ * 实现的 ApplicationContext 的创建
+ *
+ * @return the WebApplicationContext instance
+ * @see #FrameworkServlet(WebApplicationContext)
+ * @see #setContextClass
+ * @see #setContextConfigLocation
+ */
+protected WebApplicationContext initWebApplicationContext() {
+
+    //这里其实就是去本ServletContext里面去区指定的值为 ApplicationContext 的属性
+    WebApplicationContext rootContext =
+            WebApplicationContextUtils.getWebApplicationContext(getServletContext());
+    WebApplicationContext wac = null;
+
+    if (this.webApplicationContext != null) {
+        // A context instance was injected at construction time -> use it
+        wac = this.webApplicationContext;
+        if (wac instanceof ConfigurableWebApplicationContext) {
+            ConfigurableWebApplicationContext cwac = (ConfigurableWebApplicationContext) wac;
+            if (!cwac.isActive()) {
+                // The context has not yet been refreshed -> provide services such as
+                // setting the parent context, setting the application context id, etc
+                if (cwac.getParent() == null) {
+                    // The context instance was injected without an explicit parent -> set
+                    // the root application context (if any; may be null) as the parent
+                    cwac.setParent(rootContext);
+                }
+                configureAndRefreshWebApplicationContext(cwac);
+            }
+        }
+    }
+    if (wac == null) {
+        // No context instance was injected at construction time -> see if one
+        // has been registered in the servlet context. If one exists, it is assumed
+        // that the parent context (if any) has already been set and that the
+        // user has performed any initialization such as setting the context id
+        wac = findWebApplicationContext();
+    }
+    if (wac == null) {
+        // No context instance is defined for this servlet -> create a local one
+        wac = createWebApplicationContext(rootContext);
+    }
+
+    if (!this.refreshEventReceived) {
+        // Either the context is not a ConfigurableApplicationContext with refresh
+        // support or the context injected at construction time had already been
+        // refreshed -> trigger initial onRefresh manually here.
+        onRefresh(wac);
+    }
+
+    if (this.publishContext) {
+        // Publish the context as a servlet context attribute.
+        String attrName = getServletContextAttributeName();
+        getServletContext().setAttribute(attrName, wac);
+        if (this.logger.isDebugEnabled()) {
+            this.logger.debug("Published WebApplicationContext of servlet '" + getServletName() +
+                    "' as ServletContext attribute with name [" + attrName + "]");
+        }
+    }
+
+    return wac;
+}
+{% endhighlight %}
+
+AbstractApplicationContext 的 refresh() 方法，这个方法进行Bean配置资源文件的加载、解析、Bean定义的注册、组件初始化
+这个方法的实现是同步的，不允许并发调用
+
+这个方法的定义在 `ConfigurableApplicationContext` 接口中，我们先看下这个方法的定义:
+
+{% highlight java %}
+ConfigurableApplicationContext:
+
+	/**
+	 * Load or refresh the persistent representation of the configuration,
+	 * which might an XML file, properties file, or relational database schema.
+	 * <p>As this is a startup method, it should destroy already created singletons
+	 * if it fails, to avoid dangling resources. In other words, after invocation
+	 * of that method, either all or no singletons at all should be instantiated.
+	 *
+	 * 加载或者刷新 配置的持久化文件(xml文件、properties、或者是一个关系数据库定义)
+	 * 作为一个初始化方法，如果启动失败，应该销毁已经创建的Bean，以避免资源的闲置(TODO)
+	 * 换句话说，在调用了此方法后，所有的Bean都应该加载完成，或者没有加载任何Bean
+	 *
+	 * @throws BeansException if the bean factory could not be initialized
+	 * @throws IllegalStateException if already initialized and multiple refresh
+	 * attempts are not supported
+	 */
+	void refresh() throws BeansException, IllegalStateException;
+
+
+{% endhighlight %}
+
+{% highlight java %}
+
+@Override
+public void refresh() throws BeansException, IllegalStateException {
+    //加锁防止并发调用
+    synchronized (this.startupShutdownMonitor) {
+        // Prepare this context for refreshing.
+        //刷新的准备工作
+        prepareRefresh();
+
+        // Tell the subclass to refresh the internal bean factory.
+        ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+        // Prepare the bean factory for use in this context.
+        prepareBeanFactory(beanFactory);
+
+        try {
+            // Allows post-processing of the bean factory in context subclasses.
+            postProcessBeanFactory(beanFactory);
+
+            // Invoke factory processors registered as beans in the context.
+            invokeBeanFactoryPostProcessors(beanFactory);
+
+            // Register bean processors that intercept bean creation.
+            registerBeanPostProcessors(beanFactory);
+
+            // Initialize message source for this context.
+            initMessageSource();
+
+            // Initialize event multicaster for this context.
+            initApplicationEventMulticaster();
+
+            // Initialize other special beans in specific context subclasses.
+            onRefresh();
+
+            // Check for listener beans and register them.
+            registerListeners();
+
+            // Instantiate all remaining (non-lazy-init) singletons.
+            // 实例化除了懒加载的所有Bean
+            // 真正的bean加载就是在这里完成的
+            finishBeanFactoryInitialization(beanFactory);
+
+            // Last step: publish corresponding event.
+            finishRefresh();
+        }
+
+        catch (BeansException ex) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Exception encountered during context initialization - " +
+                        "cancelling refresh attempt: " + ex);
+            }
+
+            // Destroy already created singletons to avoid dangling resources.
+            destroyBeans();
+
+            // Reset 'active' flag.
+            cancelRefresh(ex);
+
+            // Propagate exception to caller.
+            throw ex;
+        }
+
+        finally {
+            // Reset common introspection caches in Spring's core, since we
+            // might not ever need metadata for singleton beans anymore...
+            resetCommonCaches();
+        }
+    }
+}
+
+{% endhighlight %}
+
+
+[1]: /img/blog/spring/dispatcherServlet.png
