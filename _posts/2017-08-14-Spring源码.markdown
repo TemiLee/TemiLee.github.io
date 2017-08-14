@@ -24,6 +24,8 @@ DispatcherServlet的父类FrameworkServlet中完成的
 HttpServletBean覆盖了HttpServlet的 `init()` 方法:
 
 {% highlight java %}
+HttpServletBean.java
+
 /**
  * Map config parameters onto bean properties of this servlet, and
  * invoke subclass initialization.
@@ -64,6 +66,8 @@ public final void init() throws ServletException {
 FrameworkServlet的 `initServletBean()` 方法:
 
 {% highlight java %}
+FrameworkServlet.java
+
 /**
  * Overridden method of {@link HttpServletBean}, invoked after any bean properties
  * have been set. Creates this servlet's WebApplicationContext.
@@ -102,6 +106,8 @@ protected final void initServletBean() throws ServletException {
 接着看一下 `initWebApplicationContext` 方法:
 
 {% highlight java %}
+FrameworkServlet.java
+
 /**
  * Initialize and publish the WebApplicationContext for this servlet.
  * <p>Delegates to {@link #createWebApplicationContext} for actual creation
@@ -117,13 +123,19 @@ protected final void initServletBean() throws ServletException {
  */
 protected WebApplicationContext initWebApplicationContext() {
 
-    //这里其实就是去本ServletContext里面去区指定的值为 ApplicationContext 的属性
+    //这里其实就是去本 ServletContext 里面去区指定的值为 ApplicationContext 的属性
+    //补充下 ServletContext 的知识：
+    //一个全局的储存信息的空间，服务器开始，其就存在，服务器关闭，其才释放，所有servlet共用一个ServletContext
+
     WebApplicationContext rootContext =
             WebApplicationContextUtils.getWebApplicationContext(getServletContext());
     WebApplicationContext wac = null;
 
+    // 这个条件判断通常是false，当在web.xml中也同时配置了ContextLoaderListener时或者父类已经进行了初始化，这里为true
     if (this.webApplicationContext != null) {
         // A context instance was injected at construction time -> use it
+        // 应用在启动过程中已经设置了 webApplicationContext(应用上下文)
+
         wac = this.webApplicationContext;
         if (wac instanceof ConfigurableWebApplicationContext) {
             ConfigurableWebApplicationContext cwac = (ConfigurableWebApplicationContext) wac;
@@ -144,10 +156,17 @@ protected WebApplicationContext initWebApplicationContext() {
         // has been registered in the servlet context. If one exists, it is assumed
         // that the parent context (if any) has already been set and that the
         // user has performed any initialization such as setting the context id
+        //
+        // 应用启动过程中没有设置 Spring上下文 实例(TODO)
+        // 查看这个方法的内部实现我们可以发现，其实在这个方法的内部尝试去用 contextAttribute 属性
+        // 的值做为 Key 去 ServletContext 中取指定的属性。
+        // 通过这个特性我们可以改变默认的 org.springframework.web.context.WebApplicationContext.ROOT 的key
+        // 值，并尝试获取已经注入的其他的上下文实现类
         wac = findWebApplicationContext();
     }
     if (wac == null) {
         // No context instance is defined for this servlet -> create a local one
+        // 确定了这个 ServletContext 没有设置 Spring 应用上下文之后 ,进行创建操作
         wac = createWebApplicationContext(rootContext);
     }
 
@@ -155,11 +174,17 @@ protected WebApplicationContext initWebApplicationContext() {
         // Either the context is not a ConfigurableApplicationContext with refresh
         // support or the context injected at construction time had already been
         // refreshed -> trigger initial onRefresh manually here.
+        // 如果不是不支持 refresh 方法的 ConfigurableApplicationContext 应用上下文，
+        // 或者在启动过程中已经执行了refresh 方法。那么在这里手动触发 refresh 方法
+        //
+        // 事实上这个方法也是个模版方法，在这个类中这个方法是一个空的实现，
+        // DispatcherServlet 覆盖了一个方法，用于初始化 SpringMVC 内部的一些Bean
         onRefresh(wac);
     }
 
     if (this.publishContext) {
         // Publish the context as a servlet context attribute.
+        // 将bean设置到 ServletContext 中
         String attrName = getServletContextAttributeName();
         getServletContext().setAttribute(attrName, wac);
         if (this.logger.isDebugEnabled()) {
@@ -168,6 +193,7 @@ protected WebApplicationContext initWebApplicationContext() {
         }
     }
 
+    //返回值
     return wac;
 }
 {% endhighlight %}
@@ -178,7 +204,7 @@ AbstractApplicationContext 的 refresh() 方法，这个方法进行Bean配置�
 这个方法的定义在 `ConfigurableApplicationContext` 接口中，我们先看下这个方法的定义:
 
 {% highlight java %}
-ConfigurableApplicationContext:
+ConfigurableApplicationContext.java:
 
 	/**
 	 * Load or refresh the persistent representation of the configuration,
@@ -200,7 +226,13 @@ ConfigurableApplicationContext:
 
 {% endhighlight %}
 
+
+AbstractApplicationContext 的 refresh()方法是Spring Bean加载的核心。这个方法的特点：
+- 方法加了一个专门的对象(`startUpShutdownMonitor`)锁，好处:防止多线程并发刷新Spring上下文，减小锁的同步范围
+- 将整个刷新流程定义为几个子方法，代码结构简单清晰、扩展性强、可维护性高
+
 {% highlight java %}
+AbstractApplicationContext.java :
 
 @Override
 public void refresh() throws BeansException, IllegalStateException {
@@ -211,31 +243,41 @@ public void refresh() throws BeansException, IllegalStateException {
         prepareRefresh();
 
         // Tell the subclass to refresh the internal bean factory.
+        // 高速子类刷新内部Bean工厂(其实就是子类通过实现这个类的抽象方法提供获取beanFactory的方法
         ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
         // Prepare the bean factory for use in this context.
+        // 对接下来要在上下文中使用的 Bean 工厂进行一些准备工作
         prepareBeanFactory(beanFactory);
 
         try {
             // Allows post-processing of the bean factory in context subclasses.
+            // 子类可扩展此方法实现Bean工厂的后置处理
+            // 这个方法是个空的实现，子类可以覆盖此方法扩展功能
             postProcessBeanFactory(beanFactory);
 
             // Invoke factory processors registered as beans in the context.
+            // 调用在Spring 应用上下文中注册的工厂处理器
             invokeBeanFactoryPostProcessors(beanFactory);
 
             // Register bean processors that intercept bean creation.
+            // 注册Bean创建过程中的拦截处理器
             registerBeanPostProcessors(beanFactory);
 
             // Initialize message source for this context.
+            // 初始化上下文的消息源(TODO,国际化相关?)
             initMessageSource();
 
             // Initialize event multicaster for this context.
+            // TODO
             initApplicationEventMulticaster();
 
             // Initialize other special beans in specific context subclasses.
+            // 在特定的 ApplicationContext 中初始化一些特殊的Bean
             onRefresh();
 
             // Check for listener beans and register them.
+            // 检查并注册监听器 Bean
             registerListeners();
 
             // Instantiate all remaining (non-lazy-init) singletons.
@@ -244,6 +286,7 @@ public void refresh() throws BeansException, IllegalStateException {
             finishBeanFactoryInitialization(beanFactory);
 
             // Last step: publish corresponding event.
+            // 最后一步：发布相应的事件
             finishRefresh();
         }
 
@@ -254,9 +297,12 @@ public void refresh() throws BeansException, IllegalStateException {
             }
 
             // Destroy already created singletons to avoid dangling resources.
+            // 销毁已经创建的Bean，防止资源闲置，(实现了上面提到的ConfigurableApplicationContext
+            // 接口对于 refresh() 方法的约束
             destroyBeans();
 
             // Reset 'active' flag.
+            // 重置 活跃 标志
             cancelRefresh(ex);
 
             // Propagate exception to caller.
@@ -266,6 +312,8 @@ public void refresh() throws BeansException, IllegalStateException {
         finally {
             // Reset common introspection caches in Spring's core, since we
             // might not ever need metadata for singleton beans anymore...
+
+            // 重置Spring中常见的内省缓存，因为我们可能不再需要这些单例Bean的元数据
             resetCommonCaches();
         }
     }

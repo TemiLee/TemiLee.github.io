@@ -332,3 +332,30 @@ pre {
         }
     }
 }
+
+/*
+ * page
+ */
+.page-number.current {
+    color: #fff;
+    background: #ccc;
+    border-top-color: #ccc;
+    font-size: 30px;
+}
+@media (max-width: 767px) {
+    .pagination {
+        border-top: none;
+    }
+    .pagination .prev,
+    .pagination .next,
+    .pagination .page-number {
+        margin-bottom: 10px;
+        border-top: 0;
+        border-bottom: 1px solid #eee;
+    }
+    .pagination .prev:hover,
+    .pagination .next:hover,
+    .pagination .page-number:hover {
+        border-bottom-color: #222;
+    }
+}

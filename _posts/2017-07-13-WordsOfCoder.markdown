@@ -13,7 +13,7 @@ modifyauthor: Temi Lee
 
 | Phrase(词汇) | 解释 |
 |:------:|:----:|
-|STW     |Stop The World 指jvm在运行垃圾回收时暂停所有其他线程的表现|
+|STW (Stop The World)    |指jvm在运行垃圾回收时暂停所有其他线程的表现|
 |Dead Lock|死锁，指程序中有环形加锁造成的相互等待|
 |RDBMS    |Relational Database Management System：关系数据库管理系统|
 |CAS      | Compare And Set 比较设置：利用cpu内置支持的cas指令避免静态条件的产生|
@@ -24,5 +24,9 @@ modifyauthor: Temi Lee
 |decoupling|解耦|
 |dangling |悬空，闲置|
 |Instantiate | 实例|
+|corresponding| 相应的、对应的|
+|detect | 检测|
+|trigger| 触发|
+|manually |手动|
 |未完待续 |持续更新|
 
