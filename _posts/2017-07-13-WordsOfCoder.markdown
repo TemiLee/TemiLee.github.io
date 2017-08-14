@@ -28,5 +28,6 @@ modifyauthor: Temi Lee
 |detect | 检测|
 |trigger| 触发|
 |manually |手动|
+|Delegates|代表|
 |未完待续 |持续更新|
 

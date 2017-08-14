@@ -198,6 +198,96 @@ protected WebApplicationContext initWebApplicationContext() {
 }
 {% endhighlight %}
 
+
+看一下真正执行创建 ApplicationContext 实例的方法，高潮终于来了 <span>![Soga][2]</span>
+
+{% highlight java %}
+FrameworkServlet.java
+
+    /**
+	 * Instantiate the WebApplicationContext for this servlet, either a default
+	 * {@link org.springframework.web.context.support.XmlWebApplicationContext}
+	 * or a {@link #setContextClass custom context class}, if set.
+	 * Delegates to #createWebApplicationContext(ApplicationContext).
+	 *
+	 * 为本 servlet 实例化一个 WebApplicationContext 的对象(默认的 XmlWebApplicationContext
+	 * 实例，或者通过调用 setContextClass 方法设置的 class 的实例).
+	 * 这个方法调用 重载的 createWebApplicationContext(ApplicationContext) 方法执行真正的创建操作
+	 *
+	 * @param parent the parent WebApplicationContext to use, or {@code null} if none
+	 * @return the WebApplicationContext for this servlet
+	 * @see org.springframework.web.context.support.XmlWebApplicationContext
+	 * @see #createWebApplicationContext(ApplicationContext)
+	 */
+	protected WebApplicationContext createWebApplicationContext(WebApplicationContext parent) {
+		return createWebApplicationContext((ApplicationContext) parent);
+	}
+
+{% endhighlight %}
+
+看下重载的 createWebApplicationContext(ApplicationContext) 方法的内容:
+
+{% highlight java %}
+FrameworkServlet.java
+
+    /**
+	 * Instantiate the WebApplicationContext for this servlet, either a default
+	 * {@link org.springframework.web.context.support.XmlWebApplicationContext}
+	 * or a {@link #setContextClass custom context class}, if set.
+	 *
+	 * 翻译见上个方法
+	 *
+	 * <p>This implementation expects custom contexts to implement the
+	 * {@link org.springframework.web.context.ConfigurableWebApplicationContext}
+	 * interface. Can be overridden in subclasses.
+	 *
+	 *
+	 *
+	 * <p>Do not forget to register this servlet instance as application listener on the
+	 * created context (for triggering its {@link #onRefresh callback}, and to call
+	 * {@link org.springframework.context.ConfigurableApplicationContext#refresh()}
+	 * before returning the context instance.
+	 *
+	 * 这两段英文含义还不太明白，以后看懂了再翻译(TODO)
+	 *
+	 * @param parent the parent ApplicationContext to use, or {@code null} if none
+	 * @return the WebApplicationContext for this servlet
+	 * @see org.springframework.web.context.support.XmlWebApplicationContext
+	 */
+	protected WebApplicationContext createWebApplicationContext(ApplicationContext parent) {
+	    // 获取 contextClass 属性代表的 WebApplicationContext 实现类，默认是:XmlWebApplicationContext.class
+		Class<?> contextClass = getContextClass();
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Servlet with name '" + getServletName() +
+					"' will try to create custom WebApplicationContext context of class '" +
+					contextClass.getName() + "'" + ", using parent context [" + parent + "]");
+		}
+		if (!ConfigurableWebApplicationContext.class.isAssignableFrom(contextClass)) {
+			throw new ApplicationContextException(
+					"Fatal initialization error in servlet with name '" + getServletName() +
+					"': custom WebApplicationContext class [" + contextClass.getName() +
+					"] is not of type ConfigurableWebApplicationContext");
+		}
+		// 使用反射实例化SpringContext
+		// 注意两点，1.调用无参构造 2.如果是接口则抛出异常
+		ConfigurableWebApplicationContext wac =
+				(ConfigurableWebApplicationContext) BeanUtils.instantiateClass(contextClass);
+
+        //设置一些环境参数
+		wac.setEnvironment(getEnvironment());
+		//父 SpringContext
+		wac.setParent(parent);
+		// 设置资源文件位置(web.xml 设置的 contextConfigLocation 属性)
+		wac.setConfigLocation(getContextConfigLocation());
+
+        //配置和刷新 ApplicationContext
+		configureAndRefreshWebApplicationContext(wac);
+
+		return wac;
+	}
+
+{% endhighlight %}
+
 AbstractApplicationContext 的 refresh() 方法，这个方法进行Bean配置资源文件的加载、解析、Bean定义的注册、组件初始化
 这个方法的实现是同步的，不允许并发调用
 
@@ -323,3 +413,4 @@ public void refresh() throws BeansException, IllegalStateException {
 
 
 [1]: /img/blog/spring/dispatcherServlet.png
+[2]: /img/ease.jpeg
