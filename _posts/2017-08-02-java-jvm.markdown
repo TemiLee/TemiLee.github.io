@@ -51,6 +51,13 @@ Java jvm 的全面分析。对于一名`javaer`来说深入了解下 `jvm` 的�
 并发(Concurrent): 指用户线程与垃圾回收线程同时执行(但并不一定是并行的，有可能是交叉执行)
 吞吐量 ＝ 运行用户代码时间 / (运行用户代码时间 + 垃圾收集时间)
 
+Minor GC : 新生代GC ,因为新生代的对象大多存活时间都比较短，所以 Minor GC 非常频繁，一般回收速度也比较快。
+Major GC / Full GC : 老年代GC ,发生 Full GC 一般都至少伴随一次 Minor GC (PS 垃圾收集器可配置不进行Minor GC), Full GC的速度一般会比Minor GC慢10倍以上。
+
+GC Ergonomics:GC自适应的调节策略
+> Parallel Scavenge收集器 可以通过参数 -XX:+UseAdaptiveSizePolicy 开启，之后就不需要手工指定新生代的大小、Eden与Survivor区的比例、晋升老年代对象年龄等细节参数了
+    虚拟机会根据当前系统的运行情况收集性能监控信息，动态调整这些参数以提供最合适的停顿时间或者最大的吞吐量
+
 GCRoot:(可达性分析算法中的起点对象)
 - 虚拟机棧 (栈帧中的本地变量表) 中引用的对象
 - 方法区中类静态属性引用的对象
@@ -89,16 +96,22 @@ java的几种引用类型:
 **垃圾收集器**
 =============
 
+HotSpot 的其中垃圾收集器(图中有连线代表两种收集器可以配合使用)
+> 为了提高应用的响应老年代大多采用 CMS 垃圾收集器，这时新生代只有 ParNew 可以与其配合工作
+
+![gc][6]
+
+
 * 新生代：
     - Serial:新生代串行回收器 (采用复制算法)
-        - 它仅仅使用单线程进行垃圾回收
+        - 它仅仅使用单线程进行垃圾回收，没有线程交互开销，效率较高
         - 它是独占式的垃圾回收,进行垃圾回收时, 存在STW现象(Stop-The-World)
         - 使用复制算法
         - 适合CPU等硬件不是很好的场合
         - 以client模式运行时, 它是默认的垃圾收集器
         - -XX:+UseSerialGC 指定新生使用新生代串行收集器和老年代串行收集器
         - 对于运行在 Client 端的 jvm 来说这个收集器是个很好的选择，单线程执行，线程切换开销小，Client端jvm一般内存较小，收集时间短
-
+![serial][7]
     - ParNew:Serial收集器的多线程版本 (除Serial外，`只有它能与CMS收集器配合工作`)
         - 将串行回收多线程化,
         - 使用复制算法
@@ -106,7 +119,7 @@ java的几种引用类型:
         - XX:+UseParNewGC 新生代使用ParNew回收器, 老年代使用串行回收器
         - XX:+UseConcMarkSweepGC 新生代使用ParNew回收器, 老年代使用CMS回收器(`最常用的选择`)
         - XX:ParallelGCThreads=n 指回ParNew回收器工作时的线程数量, cpu核数小时8时, 其值等于cpu数量, 高于8时,可以使用公式(3+((5*CPU_count)/8))
-
+![parNew][8]
     - Paralle Scavenge 回收策略和 ParNew 相同(关注点是`可控的吞吐量`)
         - 高吞吐量可以最高效率地利用CPU时间，尽快的完成运算任务，适合在后台运算，不需要太多交互的应用
         - -XX:MaxGCPauseMillis 参数控制最大垃圾收集停顿时间 (为了达到这个参数设置的时间，系统会把新生代调小一些，带来的后果是，垃圾收集次数增加，吞吐量下降)
@@ -115,8 +128,40 @@ java的几种引用类型:
 
 
 * 老年代:
-    - Serial Old: Serial收集器的老年代版本 (采用 标记-整理 算法)
+    - Serial Old: Serial收集器的老年代版本,见上图 (采用 标记-整理 算法)
+        - 单线程
+        - 可以与新生代 Paralle Scavenge 收集器配合使用
+        - 做为CMS收集器的后备方案，在发生 Concurrent Mode Failure 时使用
+
     - Parallel Old: Paralle Scavenge 的老年代版本 (标记-整理)
+        - 多线程
+        - 适用于注重吞吐量以及CPU资源敏感的场合 (Parallel Scavenge + Parallel Old)
+    - CMS(Concurrent Mark Swee) (标记—清除) 终于到了大名鼎鼎的CMS <span>![干货来袭][4]</span>
+        - 是一款以获取最短回收停顿时间为目标的收集器，整个过程分为 4 步(见下图):
+            1. 初始标记(CMS initial mark) : 扫描 GCRoot 可以直达的对象，速度较快，会产生(STW)
+            2. 并发标记(CMS concurrent mark) : 并发扫描内存中的对象。
+            3. 重新标记(CMS remark) : 修正在第二步中 对象引用的一些变化，会产生(STW) 停顿时间比第一步稍微长一些
+            4. 并发清除(CMS concurrent sweep）: 并发的清除垃圾对象
+        - 默认在老年代使用了 68% 时触发 CMS 进行垃圾收集 -XX:CMSInitiatingOccupancyFraction 可以设置触发的百分比。提高这个百分比可以
+        减少 垃圾回收次数，但是如果在垃圾回收过程中剩余的内存不足程序运行中新对象的分配，那么就会产生 Concurrent Mode Failure 转而使用
+        Serial Old 垃圾收集齐进行串行垃圾收集
+
+        - 一些缺陷:
+            1. 对CPU资源非常敏感
+            > 面向并发设计的程序都对CPU资源比较敏感。在并发阶段，它虽然不会导致用户线程停顿，但是会因为占用了一部分线程（或者说CPU资源）而导致应用程序变慢，总吞吐量会降低。
+              CMS默认启动的回收线程数是（CPU数量+3）/ 4，也就是当CPU在4个以上时，并发回收时垃圾收集线程不少于25%的CPU资源，并且随着CPU数量的增加而下降。但是当CPU不足4个（譬如2个）时，CMS对用户程序的影响就可能变得很大。
+            2. 会产生浮动垃圾
+            > 由于在第二步的标记和第四步的清除阶段是和应用程序并行进行的，所以会产生浮动的垃圾
+            另外在垃圾收集阶段用户线程还需要运行，那也就还需要预留有足够的内存空间给用户线程使用，
+            因此CMS收集器不能像其他收集器那样等到老年代几乎完全被填满了再进行收集，需要预留
+            一部分空间提供并发收集时的程序运作使用。要是CMS运行期间预留的内存无法满足程序需要，
+            就会出现一次“Concurrent Mode Failure”失败，这时虚拟机将启动后备预案：
+            临时启用Serial Old收集器来重新进行老年代的垃圾收集，这样停顿时间就很长了。
+            3. 会有内存碎片产生
+            > “标记—清除”算法收集结束时会有空间碎片产生。解决办法：
+            CMS 收集器提供参数：-XX:+UseCMSCompactAtFullConllection 开关参数，用于在FullGC之后进行一次内存整理(串行,停顿时间比较长)
+            -XX:CMSFullGCsBeforeCompaction 设置执行多少次 Full GC 后触发一次 压缩操作
+![paralleOld][9]
 
 
 **来点干货** <span>![干货来袭][4]</span>
@@ -245,3 +290,8 @@ java的几种引用类型:
 [3]: /img/jhat.png
 [4]: /img/ease.jpeg
 [5]: /img/stw.png
+[6]: /img/blog/gc/gcinfo.jpg
+[7]: /img/blog/gc/serial.jpg
+[8]: /img/blog/gc/parNew.jpg
+[9]: /img/blog/gc/paralleOld.jpg
+[10]: /img/blog/gc/cms.jpg
