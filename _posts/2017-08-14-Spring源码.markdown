@@ -4,7 +4,7 @@ title:  "Spring Resource"
 date:   2017-08-13 16:54:13
 tags: [JAVA,SPRING]
 author: Temi Lee
-lastmodify: 2017-08-13 19:17:33
+lastmodify: 2017-08-16 03:17:33
 modifyauthor: Temi Lee
 ---
 
@@ -383,6 +383,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
         // Tell the subclass to refresh the internal bean factory.
         // 高速子类刷新内部Bean工厂(其实就是子类通过实现这个类的抽象方法提供获取beanFactory的方法
+        // 实际上这里执行的是 BeanFactory 的初始化，这一步完成了配置文件的加载、解析、注册
         ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
         // Prepare the bean factory for use in this context.
@@ -499,6 +500,188 @@ AbstractApplicationContext.java
 		// to be published once the multicaster is available...
 		// 当 multicaster 可用时就允许发布早期的事件 TODO
 		this.earlyApplicationEvents = new LinkedHashSet<ApplicationEvent>();
+	}
+
+{% endhighlight %}
+
+
+obtainFreshBeanFactory() 初始化 BeanFactory() 配置文件的加载、解析、注册:
+
+{% highlight java %}
+AbstractApplicationContext.java
+    /**
+	 * Tell the subclass to refresh the internal bean factory.
+	 * 触发子类内部的 bean factory 的初始化
+	 * @return the fresh BeanFactory instance
+	 * @see #refreshBeanFactory()
+	 * @see #getBeanFactory()
+	 */
+	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+	    // 这个方法创建 bean factory 并设置ID 加载 Bean 定义
+		refreshBeanFactory();
+		//这个方法就是一个普通的属性 geter 方法，beanfactory 为空的话抛出异常
+		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		if (logger.isDebugEnabled()) {
+			logger.debug("Bean factory for " + getDisplayName() + ": " + beanFactory);
+		}
+		return beanFactory;
+	}
+
+{% endhighlight %}
+
+{% highlight java %}
+AbstractRefreshableApplicationContext.java
+    /**
+	 * This implementation performs an actual refresh of this context's underlying
+	 * bean factory, shutting down the previous bean factory (if any) and
+	 * initializing a fresh bean factory for the next phase of the context's lifecycle.
+	 *
+	 * 这个方法实现真正的刷新底层的 BeanFacotry, 如果已经有BeanFactory存在，则先关闭，
+	 * 之后 为 SpringContext 生命周期初始化一个全新的 BeanFactory
+	 *
+	 */
+	@Override
+	protected final void refreshBeanFactory() throws BeansException {
+		if (hasBeanFactory()) {
+		    //将Bean Factory 中保存 bean 的 Map 清空
+			destroyBeans();
+			// 将 BeanFactory 字段置为空
+			closeBeanFactory();
+		}
+		try {
+		    // new 一个 DefaultListableBeanFactory 的实例
+			DefaultListableBeanFactory beanFactory = createBeanFactory();
+
+			beanFactory.setSerializationId(getId());
+
+			//这个方法其实就是设置两个 boolean 类型的标志位:
+			// allowBeanDefinitionOverriding : 是否允许 bean 定义的覆盖 默认:True
+			// allowCircularReferences : 时候允许 bean 的循环引用 默认:True
+			customizeBeanFactory(beanFactory);
+
+			// 加载 bean 定义(这里的代码层层调用，有好多重载方法)
+			loadBeanDefinitions(beanFactory);
+			synchronized (this.beanFactoryMonitor) {
+				this.beanFactory = beanFactory;
+			}
+		}
+		catch (IOException ex) {
+			throw new ApplicationContextException("I/O error parsing bean definition source for " + getDisplayName(), ex);
+		}
+	}
+
+{% endhighlight %}
+
+下面是重载的两个 `loadBeanDefinitions` 方法的代码:
+
+{% highlight java %}
+XmlWebApplicationContext.java
+
+	/**
+	 * Loads the bean definitions via an XmlBeanDefinitionReader.
+	 *
+	 * 通过 XmlBeanDefinitionReader 加载、解析 spring bean 的定义
+	 *
+	 * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
+	 * @see #initBeanDefinitionReader
+	 * @see #loadBeanDefinitions
+	 */
+	@Override
+	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
+		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
+		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
+
+		// Configure the bean definition reader with this context's
+		// resource loading environment.
+		// 这里主要是设置 spring context 的环境信息，并通过这些信息
+		// 配置 bean 的读取器(reader)
+		beanDefinitionReader.setEnvironment(getEnvironment());
+		beanDefinitionReader.setResourceLoader(this);
+		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
+
+		// Allow a subclass to provide custom initialization of the reader,
+		// then proceed with actually loading the bean definitions.
+		// 这是个模版方法，允许子类实现自定义的读取器的初始化操作，然后通过这个读取器执行真正的bean加载
+		initBeanDefinitionReader(beanDefinitionReader);
+
+		// 循环遍历配置文件，加载 bean 的定义
+		loadBeanDefinitions(beanDefinitionReader);
+	}
+
+
+    /**
+	 * Load the bean definitions with the given XmlBeanDefinitionReader.
+	 * <p>The lifecycle of the bean factory is handled by the refreshBeanFactory method;
+	 * therefore this method is just supposed to load and/or register bean definitions.
+	 * <p>Delegates to a ResourcePatternResolver for resolving location patterns
+	 * into Resource instances.
+	 *
+	 * 使用指定的 bean 读取器加载 bean 的定义信息
+	 * refreshBeanFactory 方法控制着 bean factory 的生命周期,因此这个方法应该提供 bean定义 的加载、注册.
+	 * 对于 Ant path 的解析部分委托给 ResourcePatternResolver 类去实现
+	 * Ant path: spring 配置文件中的匹配原则 eg: /**/*.jsp 匹配任何的.jsp 文件
+	 *
+	 * @throws IOException if the required XML document isn't found
+	 * @see #refreshBeanFactory
+	 * @see #getConfigLocations
+	 * @see #getResources
+	 * @see #getResourcePatternResolver
+	 */
+	protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) throws IOException {
+		String[] configLocations = getConfigLocations();
+		if (configLocations != null) {
+			for (String configLocation : configLocations) {
+				reader.loadBeanDefinitions(configLocation);
+			}
+		}
+	}
+
+{% endhighlight %}
+
+
+
+看一下真正执行 Bean 加载的方法:
+
+{% highlight java %}
+
+    /**
+	 * Finish the initialization of this context's bean factory,
+	 * initializing all remaining singleton beans.
+	 */
+	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
+		// Initialize conversion service for this context.
+		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
+				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
+			beanFactory.setConversionService(
+					beanFactory.getBean(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
+		}
+
+		// Register a default embedded value resolver if no bean post-processor
+		// (such as a PropertyPlaceholderConfigurer bean) registered any before:
+		// at this point, primarily for resolution in annotation attribute values.
+		if (!beanFactory.hasEmbeddedValueResolver()) {
+			beanFactory.addEmbeddedValueResolver(new StringValueResolver() {
+				@Override
+				public String resolveStringValue(String strVal) {
+					return getEnvironment().resolvePlaceholders(strVal);
+				}
+			});
+		}
+
+		// Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+		String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
+		for (String weaverAwareName : weaverAwareNames) {
+			getBean(weaverAwareName);
+		}
+
+		// Stop using the temporary ClassLoader for type matching.
+		beanFactory.setTempClassLoader(null);
+
+		// Allow for caching all bean definition metadata, not expecting further changes.
+		beanFactory.freezeConfiguration();
+
+		// Instantiate all remaining (non-lazy-init) singletons.
+		beanFactory.preInstantiateSingletons();
 	}
 
 {% endhighlight %}

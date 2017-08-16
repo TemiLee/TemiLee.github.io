@@ -5,7 +5,7 @@ author:     Temi Lee
 tags: 		PHRASE
 subtitle:   Some Phrase and Shorthand
 category:   Phrase
-lastmodify: 2017-08-13 19:17:33
+lastmodify: 2017-08-16 03:17:33
 modifyauthor: Temi Lee
 ---
 
@@ -29,5 +29,9 @@ modifyauthor: Temi Lee
 |trigger| 触发|
 |manually |手动|
 |Delegates|代表|
+|obtain|获得|
+|underlying|底层|
+|phase|阶段|
+|handled by|处理|
 |未完待续 |持续更新|
 
