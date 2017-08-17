@@ -8,6 +8,7 @@ author: Temi Lee
 
 之前写了一篇关于<a href="/2017/08/08/Redis/">redis的博客</a>,这篇博客侧重点在缓存系统的设计与使用
 
+<br/> <br/> <br/>
 **使用缓存的利弊:**
 
 利:
@@ -19,9 +20,24 @@ author: Temi Lee
 - 代码维护和运维成本
 
 **缓存更新策略:**
-- LRU/LFU/FIFO 算法
-- 超时剔除
-- 主动更新
+
+| 策略 | 数据一致性 |开发和维护成本 |
+|:---:|:---------:|:-----------:|
+| LRU/LFU/FIFO 算法 |  差 | 低 |
+| 超时剔除 |较差 |较低 |
+| 主动更新 | 强 | 高 |
+
+redis的  `LRU` 算法和超时剔除:
+- maxmemory : 最大可用内存,
+- maxmemory-policy : 当内存超过 `maxmemory` 设置的值时，内存的淘汰策略, 默认值:`volatile-lru`
+    1. volatile-lru : 在过期的键值对中使用 LRU 算法删除过期数据
+    2. allkeys-lru : 在所有键值对中使用 LRU 算法删除过期数据
+    3. volatile-random : 在过期的键值对中随机的删除
+    4. allkeys-random : 在所有的键值对中随机删除
+    5. volatile-ttl : 删除最近要到期的键值
+    6. noeviction : 不删除键，内存超出 `maxmemory` 时返回错误
+
+- expire 命令可以为 key 设置一个超时时间
 
 
 **缓存粒度控制**
