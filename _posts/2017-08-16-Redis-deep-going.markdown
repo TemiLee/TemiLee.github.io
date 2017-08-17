@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Redis deep going"
-date:   2017-08-08 04:40:42
+date:   2017-08-16 04:40:42
 tags: [REDIS,CACHE]
 author: Temi Lee
 ---
