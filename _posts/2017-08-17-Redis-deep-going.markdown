@@ -6,7 +6,7 @@ tags: [REDIS,CACHE]
 author: Temi Lee
 ---
 
-之前写了一篇关于<a href="">redis的博客</a>,这篇博客侧重点在缓存系统的设计与使用
+之前写了一篇关于<a href="/2017/08/08/Redis/">redis的博客</a>,这篇博客侧重点在缓存系统的设计与使用
 
 **使用缓存的利弊:**
 
