@@ -357,6 +357,30 @@ form .row:first-child .floating-label-form-group {
   background-color: white;
   border-radius: 0;
 }
+
+.page-number {
+  display: inline-block;
+    font-weight: bold;
+  padding: 5px 12px;
+  font-size: 18px;
+  background: #fff;
+  border-radius: 0;
+  border: 1px solid #ddd;
+  margin: 3px;
+}
+.page-number:hover {
+  background: #0085a1;
+  color: #fff;
+}
+.current {
+  background: #ddd;
+  color: #fff;
+}
+.current:hover {
+  background: #ddd;
+  color: #fff;
+}
+
 @media only screen and (min-width: 768px) {
   .pager li > a,
   .pager li > span {
@@ -464,7 +488,9 @@ div.float-left{
 	display: none !important;
 	}
 	div.float-right{
-	display: none !important;
+	/*display: none !important;*/
+      width: 20%;
+      right: -3%;
 	}
 }
 
