@@ -88,3 +88,17 @@ lastmodify: 2017-08-11 01:27:29
 echo "" > access.log
 cat /dev/null > access.log
 
+***
+
+Linux 服务器上排除问题的思路:
+
+**First Step:**
+
+先搞清楚这几个问题:
+- 具体是什么问题类型？(无响应？报错？)
+- 问题发现时间
+- 是否可重现、是否有规律
+- 最后一次版本更新内容是什么?
+- 受影响的用户群体是怎样的?(已登陆、退出登录、某个地域)
+- 是否有监控平台可用?(Munin、Zabbix、 Nagios、 New Relic)
+- 是否有日志可以查看?(Loggly、Airbrake、 Graylog)
