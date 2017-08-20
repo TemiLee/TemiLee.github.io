@@ -24,6 +24,4 @@ lastmodify: 2017-08-19 17:46:29
     时间复杂度:O(nlogn)
 
 
-
-
 [1]: /img/blog/algorithm/maopaosort.gif
