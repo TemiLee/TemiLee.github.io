@@ -65,7 +65,7 @@ MYSQL 的结构组成、各组件作用、INNODB `索引`和`锁`的深入分析
         + 外键(数据完整性)
         + 索引：B+Tree,Hash,Full-text(MySQL5.6版本开始支持)
 
-     MyISAM适合SELECT密集型的表，而InnoDB适合INSERT和UPDATE密集型的表
+     `MyISAM适合SELECT密集型的表，而InnoDB适合INSERT和UPDATE密集型的表`
 
 ***
 
