@@ -1,0 +1,21 @@
+---
+layout: post
+title:  "Mysql Optimization"
+date:   2017-08-26 05:01:29 +0100
+tags: [MYSQL]
+author: Temi Lee
+<!-- modifyauthor: Temi Lee -->
+<!-- lastmodify: 2017-08-08 01:27:29 -->
+published: false
+---
+
+
+slappasswd -h {MD5} -s 'passwd'  生成密码
+
+
+slaptest -f /etc/openldap/slapd.conf -F /etc/openldap/slapd.d/  应用更改
+
+sudo /usr/libexec/slapd -d 255  启动服务
+
+
+ldapadd -D "cn=root,dc=example,dc=com" -W -f test.ldif

@@ -1,0 +1,12 @@
+---
+layout: post
+title:  "MAC Book Tools"
+date:   2017-08-26 05:01:29 +0100
+tags: [MYSQL]
+author: Temi Lee
+<!-- modifyauthor: Temi Lee -->
+<!-- lastmodify: 2017-08-08 01:27:29 -->
+published: false
+---
+
+lsof -i tcp:port  （port : 端口号）查看该端口被什么程序占用，并显示PID,tcp 可省略，表示查看任意协议

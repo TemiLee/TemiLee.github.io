@@ -64,6 +64,7 @@ public static void bubbleSort(int[] numbers)
     时间复杂度:Ω(f(n)) O(nlogn)
 
 *快速排序图示:*
+![快速排序][2]
 
 {% highlight java %}
 
@@ -98,8 +99,6 @@ public static int getMiddle(int[] numbers, int low,int high)
 {% endhighlight %}
 
 图中黄色为基准位，排序过程中需递归将基准位左边的数值小于基准位右边的数值
-
-![快速排序][2]
 
 [1]: /img/blog/algorithm/maopaosort.gif
 [2]: /img/blog/algorithm/quicksort.gif

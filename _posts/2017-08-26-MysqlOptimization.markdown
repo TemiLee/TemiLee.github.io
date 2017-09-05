@@ -4,9 +4,20 @@ title:  "Mysql Optimization"
 date:   2017-08-26 05:01:29 +0100
 tags: [MYSQL]
 author: Temi Lee
-<!-- modifyauthor: Temi Lee -->
-<!-- lastmodify: 2017-08-08 01:27:29 -->
+modifyauthor: Temi Lee
+lastmodify: 2017-09-05 01:27:29
 ---
+
+
+MYSQL 零散知识点：
+```
+sql 语句的长度限制：默认单条 SQL 语句大小限制wei：1M (可通过修改配置文件 my.ini 中的 max_allowed_packet = 6M
+参数修改）
+
+Mysql in 参数数量没有限制 （ Oracle 9i 中个数不能超过256,Oracle 10g个数不能超过1000 ）
+
+```
+
 
 有利于 `Mysql` 性能的几点建议:
 
