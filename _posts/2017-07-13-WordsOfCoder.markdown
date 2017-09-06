@@ -33,5 +33,10 @@ modifyauthor: Temi Lee
 |underlying|底层|
 |phase|阶段|
 |handled by|处理|
+|directive | 指示、指令 |
+|syntax | 句法、语法 |
+| Indicates | 指示 |
+|violates | 违反 |
+|restrictions| 限制 |
 |未完待续 |持续更新|
 

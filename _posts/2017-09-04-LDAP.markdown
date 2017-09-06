@@ -19,3 +19,6 @@ sudo /usr/libexec/slapd -d 255  启动服务
 
 
 ldapadd -D "cn=root,dc=example,dc=com" -W -f test.ldif
+
+
+ldapadd -H ldap://127.0.0.1 -D "cn=config" -x -w 123456 -f /etc/openldap/schema/java.ldif  添加记录
