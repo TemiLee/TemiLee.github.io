@@ -38,5 +38,13 @@ modifyauthor: Temi Lee
 | Indicates | 指示 |
 |violates | 违反 |
 |restrictions| 限制 |
+|Retrieves all of the attributes associated with a named object.|检索与命名对象关联的所有属性。|
+|Principal | 主要的 |
+|pros   | 利弊   |
+|cons   | 缺点 |
+|   distinguished   | 杰出的 |
+| retrieve |  取回 |
+| LDAP | 轻量目录访问协议(Lightweight Directory Access Protocol) |
+
 |未完待续 |持续更新|
 

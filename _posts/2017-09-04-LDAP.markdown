@@ -1,24 +1,243 @@
 ---
 layout: post
-title:  "Mysql Optimization"
-date:   2017-08-26 05:01:29 +0100
-tags: [MYSQL]
+title:  "LDAP protocol"
+date:   2017-09-04 05:01:29 +0100
+tags: [LDAP]
 author: Temi Lee
 <!-- modifyauthor: Temi Lee -->
 <!-- lastmodify: 2017-08-08 01:27:29 -->
-published: false
 ---
 
+**LDAP 简介**
+LDAP是一种通讯协议，如同HTTP是一种协议一样的！
 
-slappasswd -h {MD5} -s 'passwd'  生成密码
+LDAP是轻量目录访问协议(Lightweight Directory Access Protocol)的缩写，
+LDAP是从X.500目录访问协议的基础上发展过来的，目前的版本是v3.0。LDAP是实现提供被称为目录服务的信息服务。
+LDAP目录中的信息是是按照树型结构组织，具体信息存储在条目(entry)的数据结构中。条目相当于关系数据库中
+表的记录；条目是具有区`别名DN（Distinguished Name）的属性（Attribute）`，DN是用来引用条目的，DN相当于
+关系数据库表中的关键字（Primary Key）。属性由类型（Type）和一个或多个值（Values）组成，
+相当于关系数据库中的字段（Field）由字段名和数据类型组成，只是为了方便检索的需要，
+LDAP中的Type可以有多个Value， 而不是关系数据库中为降低数据的冗余性要求实现的各个域必须是不相关的。
+LDAP中条目的组织一般按照地理位置和组织关系进行组织，非常的直观。LDAP把数据存放在文件中，
+为提高效率可以使用基于索引的文件数据库(bdb)，而不是关系数据库。类型的一个例子就是mail，其值将是一个电子邮件地址。
+
+目录是一个为查询、浏览和搜索而优化的专业分布式数据库，它呈树状结构组织数据，
+就好象Linux/Unix系统中的文件目录一样。目录数据库和关系数据库不同，它有`优异的
+读性能，但写性能差`，并且`没有事务处理、回滚等复杂功能，` 不适于存储修改频繁的数据。
+所以目录天生是用来查询的，就好象它的名字一样。
+
+目录服务是由目录数据库和一套访问协议组成的系统。类似以下的信息适合储存在目录中：
+
+    企业员工信息，如姓名、电话、邮箱等；
+    公用证书和安全密钥；
+    公司的物理设备信息，如服务器，它的IP地址、存放位置、厂商、购买时间等；
+
+    LDAP 目录类似于文件系统目录。
+    下列目录：
+    DC=redmond,DC=wa,DC=microsoft,DC=com
+    如果我们类比文件系统的话，可被看作如下文件路径:
+    Com\Microsoft\Wa\Redmond
+    例如：CN=test,OU=developer,DC=domainname,DC=com
+    在上面的代码中 cn=test 可能代表一个用户名，ou=developer 代表一个 active directory
+    中的组织单位。这句话的含义可能就是说明 test 这个对象处在domainname.com 域的 developer 组织单元中。
+
+由此 LDAP 具有以下特性：
+- LDAP的结构用树来表示，而不是用表格。正因为这样，就不能用SQL语句了
+- LDAP可以很快地得到查询结果，不过在写方面，就慢得多
+- LDAP提供了静态数据的快速查询方式
+- Client/server模型，Server 用于存储数据，Client提供操作目录信息树的工具
+- 这些工具可以将数据库的内容以文本格式（LDAP 数据交换格式，LDIF）呈现在您的面前
+- LDAP是一种开放Internet标准，LDAP协议是跨平台的Interent协议
+
+***
+
+**LDAP 基本概念：**
+
+- Directory:目录,存放对象的信息,这些信息以某种顺序组织,详细描述每个对象.
+- DIT:目录信息树,Directory Information Tree,目录条目的集合构成了目录信息树.
+- Entry:条目,目录信息树中的一个结点,是一个对象信息的集合,是目录信息中最基本的,`LDAP目录的条目（entry）由属性（attribute）的一个聚集组成，并由一个唯一性的名字引用,即专有名称（distinguished name，DN）。例如，DN能取这样的值：“ou=people,dc=wikipedia,dc=org”。`
+    - Entry ：条目，也叫记录项，是LDAP中最基本的颗粒，就像字典中的词条，或者是数据库中的记录。通常对LDAP的添加、删除、更改、检索都是以条目为基本对象的。
+        - dn：唯一标识名/完全限定名,每一个条目都有一个唯一的标识名（distinguished Name ，DN）,用于标识对象在活动目录中完整路径，如上图中一个 dn："cn=baby,ou=marketing,ou=people,dc=mydomain,dc=org" 。通过DN的层次型语法结构，可以方便地表示出条目在LDAP树中的位置，通常用于检索。
+        - rdn：rdn用来标识容器中的一个对象，是DN中最前面的一项(第一个逗号前),一般指dn逗号最左边的部分，如cn=baby。它与RootDN不同，RootDN通常与RootPW同时出现，特指管理LDAP中信息的最高权限用户。
+        - RDN:相对标识名,Relative Distinguished Name,条目的名字.
+        - Base DN：LDAP目录树的最顶部就是根，也就是所谓的“Base DN"，如"dc=mydomain,dc=org"。
+- OU:单位,Oragnization Unit,包含该对象的一系列属性.
+- Attribute:属性,属性描述对象的特征.一个属性由属性类型(type)和一个或多个属性值
+(values)构成.
+    - Attribute ： 每个条目都可以有很多属性（Attribute），比如常见的人都有姓名、地址、电话等属性。每个属性都有名称及对应的值，属性值可以有单个、多个，比如你有多个邮箱。（属性不是随便定义的，需要符合一定的规则，而这个规则可以通过schema制定。比如，如果一个entry没有包含在 inetorgperson 这个 schema 中的objectClass: inetOrgPerson，那么就不能为它指定employeeNumber属性，因为employeeNumber是在inetOrgPerson中定义的。）
+        - 通用的属性：
+            - DC=Domain Component 域
+            - CN=Common Name 为用户名或服务器名，最长可以到80个字符，可以为中文；
+            - OU=Organization Unit为组织单元，最多可以有四级，每级最长32个字符，可以为中文；
+            - O=Organization 为组织名，可以3—64个字符长
+            - C=Country为国家名，可选，为2个字符长
+
+- Objectclass: LDAP对象类(The list of classes from which this class is derived)
+    `the objectClass attribute is multi-valued. Each object can inherit from one or more classes. `
+    <br/>（Objectclass是LDAP内置的数据模型。每种objectClass有自己的数据结构，比如我们有一种叫“电话薄”的objectClass，
+    肯定会内置很多属性(attributes)，如姓名(uid)，身份证号(uidNumber)，单位名称(gid)，家庭地址(homeDirectory)等，
+    同时，还有一种叫“同学录”的objectClass，具备“电话薄”里的一些attributes(如uid、homeDirectory)，还会具有“电话薄”没有的attributes(如description等).
+    `其中这些属性都可以限制为必填或者非必填`)
+    <br/>`LDAP中，一个条目(Entry)必须包含一个对象类(objectClass)属性，且需要赋予至少一个值。每一个值将用作一条LDAP条目进行数据存储的模板；模板中包含了一个条目必须被赋值的属性和可选的属性。`
+    <br/> objectClass有着严格的等级之分，最顶层是top和alias。例如，organizationalPerson这个objectClass就隶属于person，而person又隶属于top。
+    <br/> objectClass可分为以下3类：
+    - 结构型（Structural）：如account、inetOrgPerson、person和organizationUnit；
+    - 辅助型（Auxiliary）：如extensibeObject；
+    - 抽象型（Abstract）：如top，抽象型的objectClass不能直接使用。
+
+- objectCategory: (An object class name used to groups objects of this or derived classes. )
+    <br/> 因为：
+    - `微软的 ldap 服务对 objectCategory 属性有索引,Objectclass 没有`
+    - Objectclass 通常为多个值(继承多个对象属性)
+    - objectCategory 为一个固定值比如：CN=Person,CN=Schema,CN=Configuration,DC=ads-telekom,DC=de
+
+    所以，使用 objectCategory 的搜索效率要高于 Objectclass
+
+***
 
 
-slaptest -f /etc/openldap/slapd.conf -F /etc/openldap/slapd.d/  应用更改
-
-sudo /usr/libexec/slapd -d 255  启动服务
-
-
-ldapadd -D "cn=root,dc=example,dc=com" -W -f test.ldif
+CN, OU, DC 都是 LDAP 连接服务器的端字符串中的区别名称（DN, distinguished name）
+LDAP连接服务器的连接字串格式为：ldap://servername/DN （`DN 可不指定，或指定一部分,左边的一部分`)
+其中DN有三个属性，分别是CN,OU,DC
 
 
-ldapadd -H ldap://127.0.0.1 -D "cn=config" -x -w 123456 -f /etc/openldap/schema/java.ldif  添加记录
+***
+
+**LDAP 目录搜索**
+
+LDAP服务中搜索要用到相应的Filter语句。Filter语句由3个部分组成：
+
+`(<entry 属性><操作符><值>)`
+
+- 属性，如：cn ，uid ，操作属性如:objectClass  ,  nsroledn
+- 比较操作符 ，微软 ldap 实现 不支持（ >,< 操作符), Eg: (cn=Jim Smith) ,比较操作运算符不区分大小写
+
+    | 操作符 | 含义 |
+    |:------:|:----:|
+    | = | 等于 |
+    | >= | 大于等于 |
+    | <= | 小于等于 |
+
+   <br/><br/><br/>
+
+- 逻辑运算符，如: 与操作&  ,或操作 \| ,非操作！(与 java 表达式不同的是 ldap 逻辑操作符放在表达式开头)
+    Eg: (|(cn=Jim Smith)(&(givenName=Jim)(sn=Smith)))
+         either the cn attribute must be "Jim Smith", or the givenName attribute must be "Jim" and the sn attribute must be "Smith"
+
+    | 操作符 | 含义 |
+    |:------:|:----:|
+    | & | 且，必须满足所有的条件 |
+    | | | 或, 满足任意一个条件 |
+    | ! | 非 |
+
+- 特殊字符：
+
+    以下字符在 ldap 中具有特殊含义：
+    \* ( ) \ NUL `如果括号是成对出现的则不需要转义`
+    相应的转义字符为：
+
+    | 字符 | 十六进制表示 |
+    |:----:|:----------:|
+    | * | \2A |
+    | ( | \28 |
+    | ) | \29 |
+    | \ | \5C |
+    | Nul | \00 |
+
+    Eg: (cn=James Jim\2A\29 Smith) 表示 cn 为 "James Jim*) Smith" 的entry
+
+- 一些查询示例:
+
+    | 查询 | 对应的 filter |
+    |:----:|:-------------|
+    |所有用户类型节点|(&(objectCategory=person)(objectClass=user))|
+    |所有的计算机节点|(objectCategory=computer)|
+    |所有描述属性为空的计算机节点 | (&(objectCategory=computer)(!(description=*)))|
+    |拥有描述信息的组节点 | (&(objectCategory=group)(description=*)) |
+    | cn 属性值以 "Joe" 开头的用户节点 | (&(objectCategory=person)(objectClass=user)(cn=Joe*))|
+    |以 "Test" or "Admin" 开头的组节点|(&(objectCategory=group)(\|(cn=Test*)(cn=Admin*))) |
+    | 查询所有有desc属性的节点 | (desc=*) |
+    | 查询所有有email属性为空的节点 | (email=)|
+    |查询所有age为28,或者name为张三的节点 | (\|(age=28)(name=张三)) |
+
+***
+
+**Ldap 常用命令:**
+
+- `slappasswd -h {MD5} -s 'passwd'  生成密码` -h 指定加密方式 -s 明文密码
+- `slaptest -f /etc/openldap/slapd.conf -F /etc/openldap/slapd.d/  应用更改` 这个命令 解析 slapd.conf 文件并重新编译到目标文件 slapd.d 配置文件有错误的话在这里以可以检测出来
+- `sudo /usr/libexec/slapd -d 255  启动服务` -d 255 以 debug 方式启动服务器
+- `ldapadd -H ldap://127.0.0.1 -D "cn=config" -x -w 123456 -f /etc/openldap/schema/java.ldif  添加记录`
+
+
+**Spring-Ldap**
+
+*Spring LDAP是基于Spring的JdbcTemplate模式简化LDAP操作的Java库。可以缓解用户的常见问题，例如连接池，查找和关闭上下文，循环结果，编码/解码值和过滤器等。*
+
+Spring LDAP 提供一下功能:
+- 提供 JdbcTemplate 风格的模版简化 LDAP 的操作
+- 基于 JPA/Hibernate 风格的注释提供 object/directory 映射
+- 简化构建 LDAP 查询的实用程序
+- 提供LDAP连接池
+- 补充支持客户端 LDAP 事物
+
+连接池配置:
+{% highlight java %}
+
+@Configuration
+public class LdapSourceReadConfig {
+
+    @Value("${ldap.host}")
+    private String host;
+
+    @Value("${ldap.username}")
+    private String username;
+
+    @Value("${ldap.passwd}")
+    private String passwd;
+
+    @Value("${ldap.rootdn}")
+    private String rootdn;
+
+    @Bean(name="ldapContextSource")
+    public LdapContextSource vipKidLdapContextSource(){
+        LdapContextSource ldapContextSource = new LdapContextSource();
+        ldapContextSource.setUrl(host);
+        ldapContextSource.setBase(rootdn);
+        ldapContextSource.setUserDn(username);
+        ldapContextSource.setPassword(passwd);
+        return ldapContextSource;
+    }
+
+    @Bean(name="ldapPoolingContextSource")
+    public PoolingContextSource vipKidPoolingContextSource(@Qualifier("ldapContextSource")LdapContextSource ldapContextSource){
+        PoolingContextSource poolingContextSource = new PoolingContextSource();
+        poolingContextSource.setContextSource(ldapContextSource);
+
+        return poolingContextSource;
+    }
+
+    @Bean(name="ldapTemplate")
+    public LdapTemplate vipKidLdapTemplate(@Qualifier("ldapPoolingContextSource")PoolingContextSource poolingContextSource){
+        return new LdapTemplate(poolingContextSource);
+    }
+
+}
+
+{% endhighlight %}
+
+
+SpringLDAP 常见异常:
+
+`org.springframework.ldap.PartialResultException: Unprocessed Continuation Reference(s); nested exception is javax.naming.PartialResultException: Unprocessed Continuation Reference(s); remaining name '/'` 未指定查询根节点异常解决办法：
+
+- This error comes where you searchbaseDN works from top level.Use ou(Organization unit) in search base dn
+- 设置 ignorePartialResultExcepton = true 属性 `LdapTemplate(poolingContextSource).setIgnorePartialResultException(true)`
+
+- List<String> search = ldapTemplate.search(query().base("ou=Vipkid,ou=Vipkid").where("objectclass").is("person"),(AttributesMapper<String>) attributes -> String.valueOf(attributes.get("cn"))); `通过 base() 方法指定查询根节点 `
+
+
+参考：
+
+http://wujunfeng.blog.51cto.com/3041/772590
+https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx
