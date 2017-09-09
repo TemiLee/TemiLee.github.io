@@ -4,8 +4,8 @@ title:  "LDAP protocol"
 date:   2017-09-04 05:01:29 +0100
 tags: [LDAP]
 author: Temi Lee
-<!-- modifyauthor: Temi Lee -->
-<!-- lastmodify: 2017-08-08 01:27:29 -->
+modifyauthor: Temi Lee
+lastmodify: 2017-09-09 18:27:29
 ---
 
 **LDAP 简介**
@@ -229,15 +229,125 @@ public class LdapSourceReadConfig {
 
 SpringLDAP 常见异常:
 
-`org.springframework.ldap.PartialResultException: Unprocessed Continuation Reference(s); nested exception is javax.naming.PartialResultException: Unprocessed Continuation Reference(s); remaining name '/'` 未指定查询根节点异常解决办法：
+1. `org.springframework.ldap.PartialResultException: Unprocessed Continuation Reference(s); nested exception is javax.naming.PartialResultException: Unprocessed Continuation Reference(s); remaining name '/'` 未指定查询根节点异常解决办法：
 
-- This error comes where you searchbaseDN works from top level.Use ou(Organization unit) in search base dn
-- 设置 ignorePartialResultExcepton = true 属性 `LdapTemplate(poolingContextSource).setIgnorePartialResultException(true)`
+    - This error comes where you searchbaseDN works from top level.Use ou(Organization unit) in search base dn
+    - 设置 ignorePartialResultExcepton = true 属性 `LdapTemplate(poolingContextSource).setIgnorePartialResultException(true)`
 
-- List<String> search = ldapTemplate.search(query().base("ou=Vipkid,ou=Vipkid").where("objectclass").is("person"),(AttributesMapper<String>) attributes -> String.valueOf(attributes.get("cn"))); `通过 base() 方法指定查询根节点 `
+    - List<String> search = ldapTemplate.search(query().base("ou=Vipkid,ou=Vipkid").where("objectclass").is("person"),(AttributesMapper<String>) attributes -> String.valueOf(attributes.get("cn"))); `通过 base() 方法指定查询根节点 `
 
+2. `org.springframework.ldap.odm.core.impl.MetaDataException: Class class com.example.Ldap.domain.VipKidUser must have a class level interface org.springframework.ldap.odm.annotations.Entry annotation`
+
+    - 返回 domain 类需要加 注释：`@Entry(objectClasses = { "person", "top" }, base="ou=Vipkid,ou=Vipkid")`
+
+3. `org.springframework.dao.IncorrectResultSizeDataAccessException: Incorrect result size: expected 1, actual 271`
+    - 使用 findOne() 方法查询结果大于一条
+
+4. `org.springframework.ldap.NameNotFoundException: [LDAP: error code 32 - 0000208D: NameErr: DSID-03100238, problem 2001 (NO_OBJECT), data 0, best match of:
+    	'OU=产品中心,OU=Vipkid,OU=Vipkid,DC=vipkid,DC=test'
+     ]; nested exception is javax.naming.NameNotFoundException: [LDAP: error code 32 - 0000208D: NameErr: DSID-03100238, problem 2001 (NO_OBJECT), data 0, best match of:
+    	'OU=产品中心,OU=Vipkid,OU=Vipkid,DC=vipkid,DC=test'
+     ]; remaining name 'objectClass=person,ou=产品中心,ou=Vipkid,ou=Vipkid'`
+    - 查询的节点路径不存在
+    - LdapQueryBuilder where() 方法指定属性，add() 方法指定路径
+
+5. `org.springframework.ldap.UncategorizedLdapException: Uncategorized exception occured during LDAP processing; nested exception is java.lang.UnsupportedOperationException: Not supported for this implementation`
+
+    跟踪 Spring LDAP 源码:
+
+    {% highlight java %}
+    org.springframework.ldap.core.LdapTemplate
+
+    /**
+    * Ldap 两次"绑定"验证 : ⓵ 先匿名绑定到LDAP服务器，如果LDAP服务器没有启用
+    *                 匿名绑定，一般会提供一个默认的用户，用这个用户进行绑定。
+    *                     ⓶ 通过登陆名称Filter 搜索得到该entry的DN，然后
+    *                  用这个DN和第一步中得到的password重新绑定LDAP服务器。
+    */
+    private AuthenticationStatus authenticate(Name base,
+                                String filter,
+                                String password,
+                                SearchControls searchControls,
+                                final AuthenticatedLdapEntryContextCallback callback,
+                                final AuthenticationErrorCallback errorCallback) {
+
+        //首次绑定
+        List<LdapEntryIdentification> result = search(base, filter, searchControls, new LdapEntryIdentificationContextMapper());
+        if (result.size() == 0) {
+            String msg = "No results found for search, base: '" + base + "'; filter: '" + filter + "'.";
+            LOG.info(msg);
+            return AuthenticationStatus.EMPTYRESULT;
+        } else if (result.size() > 1) {
+            String msg = "base: '" + base + "'; filter: '" + filter + "'.";
+            throw new IncorrectResultSizeDataAccessException(msg, 1, result.size());
+        }
+
+        final LdapEntryIdentification entryIdentification = result.get(0);
+
+        try {
+            /**
+            * 如果是通过连接池创建出来的 这里的 DirContext 实现类为:org.springframework.ldap.pool.factory.PoolingContextSource
+            * 如果ldap连接是有连接池的话，那么总是调用已创建好的连接去验证，这样是错误的。Authenticate的验证过程需要ContextSource通过
+            * 传入的待验证的用户名和密码来重新绑定生成一个连接，也就是说这个方法要使用到的connection连接并不能是连接池里的那个connection。
+            */
+
+            //二次绑定
+            DirContext ctx = contextSource.getContext(entryIdentification.getAbsoluteName().toString(), password);
+            executeWithContext(new ContextExecutor<Object>() {
+                public Object executeWithContext(DirContext ctx) throws javax.naming.NamingException {
+                    callback.executeWithContext(ctx, entryIdentification);
+                    return null;
+                }
+            }, ctx);
+            return AuthenticationStatus.SUCCESS;
+        }
+        catch (Exception e) {
+            LOG.debug("Authentication failed for entry with DN '" + entryIdentification.getAbsoluteName() + "'", e);
+            errorCallback.execute(e);
+            return AuthenticationStatus.UNDEFINED_FAILURE;
+        }
+    }
+
+
+    {% endhighlight %}
+
+
+
+
+查询优化:
+
+- 通过 ignorePartialResultExcepton = true 参数设置，query 不指定 base。 获取指定 user 节点 5000 次耗时：68.192 s
+- ignorePartialResultExcepton = false , query 指定部分 base 路径。获取指定 user 节点 5000 次耗时：33.892 s
+    {% highlight java %}
+
+        Long start = System.nanoTime();
+
+        for (int i = 0; i<5000;i++) {
+            ldapTemplate.findOne(query().base(LdapConst.BASE_DN).where("cn").is("zhangsan"), VipKidUser.class);
+        }
+
+        Long end = System.nanoTime();
+
+        Long time = end - start;
+        logger.info(time);
+
+    {% endhighlight %}
+- ignorePartialResultExcepton = false , query 指定完整 base 路径。获取指定 user 节点 5000 次耗时：31.577 s
+    {% highlight java %}
+
+            Long start = System.nanoTime();
+
+            for (int i = 0; i<5000;i++) {
+                ldapTemplate.findOne(query().base("ou=产品中心,"+LdapConst.BASE_DN).where("cn").is("zhangsan"), VipKidUser.class);
+            }
+
+            Long end = System.nanoTime();
+
+            Long time = end - start;
+            logger.info(time);
+
+     {% endhighlight %}
 
 参考：
-
 http://wujunfeng.blog.51cto.com/3041/772590
 https://social.technet.microsoft.com/wiki/contents/articles/5392.active-directory-ldap-syntax-filters.aspx

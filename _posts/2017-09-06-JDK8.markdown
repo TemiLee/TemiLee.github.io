@@ -11,3 +11,25 @@ published: false
 
 
 JDK 1.8 新特性
+
+**现有时间API的一些局限:**
+- 日期和时间用例支持不足。(现有的类（如 java.util.Date 和 SimpleDateFormatter）不是线程安全的，导致用户可能遇到并发问题 — 这不是普通开发人员编写日期处理代码时想要的结果。)
+- 有些日期和时间类暴露出相当拙劣的 API 设计。例如，java.util.Date 中的年份从 1900 开始，月份从 1 开始，日期从 0 开始 — 不是很直观。
+
+**新的日期处理API核心思想:**
+- `不可变值类。` Java 中现有的格式化处理类 (formatter) 的一个严重缺陷就是它们不是线程安全的。这就给开发人员带来了麻烦，需要以线程安全的方式使用它们，并在日常开发处理日期的代码时考虑到并发问题。新的 API 确保了所有核心类是不可变的并且代表明确定义的值，避免了这一问题。
+- `领域驱动设计`。新的 API 使用贴切代表 Date 和 Time 不同用例的类实现了精确的领域建模。以前的 Java 库在这方面的表现相当差。例如，java.util.Date 代表一个时间点，从 UNIX 时代开始就以毫秒数的形式保存，但您调用 toString() 时，结果却显示它有时区的概念，这就容易让开发人员产生歧义。
+- `区分历法体系。` 新的 API 允许人们使用不同的历法体系，以支持世界上某些不一定遵循 ISO-8601 的地区（如日本或泰国）用户的需求。新的 API 不会给大多数开发人员增加额外的负担，他们只需要使用标准历法。
+- 新 API 中的所有核心类均使用流畅的工厂方法构造。通过组成字段构造值时，工厂名为 of；从其他类型转换时，工厂名为 from。而且，还有些 parse 方法接受字符串作为参数。
+
+*LocalDate:*
+
+    LocalDateTime timePoint = LocalDateTime.now();     // The current date and time
+    LocalDate.of(2012, Month.DECEMBER, 12); // from values
+    LocalDate.ofEpochDay(150);  // middle of 1970
+    LocalTime.of(17, 18); // the train I took home today
+    LocalTime.parse("10:15:30"); // From a String
+    LocalDate theDate = timePoint.toLocalDate();
+    Month month = timePoint.getMonth();
+    int day = timePoint.getDayOfMonth();
+    timePoint.getSecond();
