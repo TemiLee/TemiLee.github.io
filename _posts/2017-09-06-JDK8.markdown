@@ -6,11 +6,69 @@ tags: [JAVA]
 author: Temi Lee
 <!-- modifyauthor: Temi Lee -->
 <!-- lastmodify: 2017-08-08 01:27:29 -->
-published: false
+<!-- published: false -->
 ---
 
-
 JDK 1.8 新特性
+
+**Lambda表达式和函数式接口**
+
+`Lambda表达式`：Lambda表达式（也称为闭包）, 它允许我们将函数当成参数传递给某个方法，或者把代码本身当作数据处理
+在 JDK1.8 之前只能使用匿名内部类代替Lambda表达式。
+
+*1.最简单的Lambda表达式由逗号分隔的`参数列表`、`->`符号和`语句块`组成，`(parameters) -> expression` 例如：*
+{% highlight java %}
+    //这里 e 的参数类型由编译器推理得出
+    Arrays.asList( "a", "b", "d" ).forEach( e -> System.out.println( e ) );
+
+    //也可以这样显示指出参数类型
+    Arrays.asList( "a", "b", "d" ).forEach( ( String e ) -> System.out.println( e ) );
+
+    //可以使用 大括号 构成语句块
+    Arrays.asList( "a", "b", "d" ).forEach( e -> {
+        System.out.print( e );
+        System.out.print( e );
+    } );
+{% endhighlight %}
+
+*2.Lambda表达式如果引用`类成员`和`局部变量`,会将这些变量隐式得转换成`final`的，例如下列两个代码块的效果完全相同：*
+{% highlight java %}
+    String separator = ",";
+    Arrays.asList( "a", "b", "d" ).forEach(
+    ( String e ) -> System.out.print( e + separator ) );
+{% endhighlight %}
+
+{% highlight java %}
+    final String separator = ",";
+    Arrays.asList( "a", "b", "d" ).forEach(
+    ( String e ) -> System.out.print( e + separator ) );
+{% endhighlight %}
+
+*3.Lambda表达式有返回值，返回值的类型也由编译器推理得出。如果Lambda表达式中的语句块只有一行，则可以不用使用return语句:*
+{% highlight java %}
+    Arrays.asList( "a", "b", "d" ).sort( ( e1, e2 ) -> e1.compareTo( e2 ) );
+{% endhighlight %}
+{% highlight java %}
+    Arrays.asList( "a", "b", "d" ).sort( ( e1, e2 ) -> {
+        int result = e1.compareTo( e2 );
+        return result;
+    } );
+{% endhighlight %}
+
+`函数接口 :` 函数接口指的是只有一个函数的接口，这样的接口可以`隐式转换为Lambda表达式`.
+@FunctionalInterface 注解可用来显式说明某个接口是函数式接口(`默认方法和静态方法不会破坏函数式接口的定义`)
+
+***
+
+**接口增加默认方法和静态方法**
+
+***
+
+**方法引用**
+
+
+***
+在新的java.time包中,增加时间处理API
 
 **现有时间API的一些局限:**
 - 日期和时间用例支持不足。(现有的类（如 java.util.Date 和 SimpleDateFormatter）不是线程安全的，导致用户可能遇到并发问题 — 这不是普通开发人员编写日期处理代码时想要的结果。)
@@ -24,12 +82,14 @@ JDK 1.8 新特性
 
 *LocalDate:*
 
-    LocalDateTime timePoint = LocalDateTime.now();     // The current date and time
-    LocalDate.of(2012, Month.DECEMBER, 12); // from values
-    LocalDate.ofEpochDay(150);  // middle of 1970
-    LocalTime.of(17, 18); // the train I took home today
-    LocalTime.parse("10:15:30"); // From a String
-    LocalDate theDate = timePoint.toLocalDate();
-    Month month = timePoint.getMonth();
-    int day = timePoint.getDayOfMonth();
-    timePoint.getSecond();
+{% highlight java %}
+    LocalDateTime timePoint = LocalDateTime.now();     // 获取当前时间和日期
+    LocalDate.of(2012, Month.DECEMBER, 12); // 由值构造日期
+    LocalDate.ofEpochDay(150);  // 1970 的第150天
+    LocalTime.of(17, 18); // 由值构造时间
+    LocalTime.parse("10:15:30"); // 由String 进行解析
+    LocalDate theDate = timePoint.toLocalDate(); // 时间领域转变
+    Month month = timePoint.getMonth(); //获取月份
+    int day = timePoint.getDayOfMonth(); //获取日期
+    timePoint.getSecond(); //秒
+{% endhighlight %}
