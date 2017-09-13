@@ -56,6 +56,17 @@ JDK 1.8 新特性
 {% endhighlight %}
 
     Lambda 表达式实现原理：
+    将Lambda表达式转化成字节码只需要如下两步：
+    1. 生成一个 invokedynamic 调用点，也叫做Lambda工厂。当调用时返回一个Lambda表达式转化成的函数式接口实例。
+    2. 将Lambda表达式的方法体转换成方法供invokedynamic指令调用。
+    EG: 对于如下两个 lambda 表达式会分别生成注释上的连个方法
+    //private void com.example.LearnDemo.lambda.LambdaTest.lambda$testLambda$0(java.lang.String)]
+    Arrays.asList("a","b","c","d").forEach(e -> logger.info(e));
+    //private static int com.example.LearnDemo.lambda.LambdaTest.lambda$testLambda$1(java.lang.String,java.lang.String)
+    Arrays.asList( "a", "b", "d" ).sort( ( e1, e2 ) -> {
+        int result = e1.compareTo( e2 );
+        return result;
+    } );
 
 `函数接口 :` 函数接口指的是只有一个函数的接口，这样的接口可以`隐式转换为Lambda表达式`.
 @FunctionalInterface 注解可用来显式说明某个接口是函数式接口(`默认方法和静态方法不会破坏函数式接口的定义`)
