@@ -1,0 +1,15 @@
+---
+layout: post
+title:  "PAPER READING: Natural Image Quality Evaluator"
+date:   2019-09-11 13:01:29 +0100
+tags: [CV]
+author: Temi Lee
+<!-- modifyauthor: Temi Lee -->
+<!-- lastmodify: 2017-08-08 01:27:29 -->
+published: ture
+---
+
+**Making a “Completely Blind” Image
+  Quality Analyzer**
+  
+
